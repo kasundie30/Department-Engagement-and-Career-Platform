@@ -1,0 +1,59 @@
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+
+interface ProtectedRouteProps {
+    children: React.ReactNode;
+    roles?: string[];
+}
+
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, roles }) => {
+    const { isAuthenticated, isInitialized, authError, hasRole } = useAuth();
+
+    // No manual login() call needed — AuthContext uses onLoad:'login-required'
+    // which redirects to Keycloak automatically if not authenticated, and
+    // processes the ?code= on the way back before React even renders.
+
+    if (!isInitialized) {
+        return (
+            <div className="loading-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'var(--font-body)' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>⏳</div>
+                    <p style={{ color: 'var(--text-secondary, #555)' }}>Loading authentication...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isAuthenticated) {
+        if (authError) {
+            return (
+                <div className="loading-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'var(--font-body)' }}>
+                    <div style={{ textAlign: 'center', maxWidth: 680, padding: '0 1rem' }}>
+                        <h2 style={{ marginBottom: '0.8rem' }}>Authentication Setup Required</h2>
+                        <p style={{ color: 'var(--text-secondary, #555)', marginBottom: '0.6rem' }}>{authError}</p>
+                        <p style={{ color: 'var(--text-secondary, #555)' }}>Current origin must be HTTPS for Keycloak callback cookies.</p>
+                    </div>
+                </div>
+            );
+        }
+
+        return (
+            <div className="loading-screen" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontFamily: 'var(--font-body)' }}>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔐</div>
+                    <p style={{ color: 'var(--text-secondary, #555)' }}>Redirecting to login...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (roles && roles.length > 0) {
+        const hasRequiredRole = roles.some(role => hasRole(role));
+        if (!hasRequiredRole) {
+            return <Navigate to="/unauthorized" replace />;
+        }
+    }
+
+    return <>{children}</>;
+};
