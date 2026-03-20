@@ -106,7 +106,7 @@ export const InfraStatus: React.FC = () => {
                             <span className="badge positive">Healthy</span>
                         </div>
                         <div className="infra-item">
-                            <span>Keycloak OIDC Auth</span>
+                            <span>Auth0 OIDC Auth</span>
                             <span className="badge positive">Healthy</span>
                         </div>
                         <div className="infra-item">

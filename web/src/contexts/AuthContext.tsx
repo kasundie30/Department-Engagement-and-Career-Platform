@@ -1,5 +1,6 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { setTokenGetter } from '../lib/axios';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -51,7 +52,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         : null;
 
-    const login = () => loginWithRedirect();
+    const login = () => {
+        console.log('[AuthContext] Initiating login with Auth0');
+        loginWithRedirect();
+    };
+    
     const logout = () =>
         auth0Logout({ logoutParams: { returnTo: window.location.origin } });
 
@@ -63,10 +68,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             return await getAccessTokenSilently({
                 authorizationParams: { audience: import.meta.env.VITE_AUTH0_AUDIENCE },
             });
-        } catch {
+        } catch (err) {
+            console.error('[AuthContext] Error getting access token:', err);
             return undefined;
         }
     };
+
+    // Initialize axios token getter so Bearer tokens are attached to API requests
+    useEffect(() => {
+        if (isAuthenticated) {
+            setTokenGetter(getAccessToken);
+        }
+    }, [isAuthenticated, getAccessToken]);
+
+    // Debug logging for auth state
+    useEffect(() => {
+        console.log('[AuthContext] Auth state updated:', {
+            isLoading,
+            isAuthenticated,
+            error: error?.message || null,
+            userEmail: user?.email || null,
+            isInitialized: !isLoading,
+            timestamp: new Date().toISOString(),
+        });
+    }, [isLoading, isAuthenticated, error, user]);
 
     return (
         <AuthContext.Provider

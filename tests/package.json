@@ -1,0 +1,23 @@
+{
+  "name": "decp-integration-tests",
+  "version": "1.0.0",
+  "description": "Integration tests for DECP external services and local service health",
+  "private": true,
+  "scripts": {
+    "test": "jest --runInBand --forceExit",
+    "test:verbose": "jest --runInBand --forceExit --verbose",
+    "test:external": "jest --runInBand --forceExit --testPathPattern=\"auth0|mongodb|redis|r2\"",
+    "test:health": "jest --runInBand --forceExit --testPathPattern=\"services-health\"",
+    "test:coverage": "jest --runInBand --forceExit --coverage"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.0.0",
+    "ioredis": "^5.3.0",
+    "mongoose": "^8.0.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0"
+  }
+}

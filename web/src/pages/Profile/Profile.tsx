@@ -38,7 +38,7 @@ export const Profile: React.FC = () => {
             });
         } catch (err) {
             console.error('Failed to load profile from backend', err);
-            // Fallback to Keycloak JS token info
+            // Fallback to Auth0 profile info from AuthContext
             setProfile({
                 _id: user?.sub,
                 email: user?.email,
@@ -150,7 +150,7 @@ export const Profile: React.FC = () => {
                             <div className="auth-status-list">
                                 <div className="auth-stat-row">
                                     <span className="label">Identity Provider</span>
-                                    <span className="value">Keycloak (OIDC)</span>
+                                    <span className="value">Auth0 (OIDC)</span>
                                 </div>
                                 <div className="auth-stat-row">
                                     <span className="label">Account Status</span>

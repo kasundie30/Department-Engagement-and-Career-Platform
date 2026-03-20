@@ -25,7 +25,7 @@ export const Topbar: React.FC = () => {
         return 'User';
     };
 
-    // Derive display name: prefer DB-stored name, fallback to Keycloak profile
+    // Derive display name: prefer DB-stored name, fallback to Auth0 profile
     const displayName = profileName
         || (user?.firstName ? `${user.firstName} ${user.lastName || ''}`.trim() : '')
         || user?.username

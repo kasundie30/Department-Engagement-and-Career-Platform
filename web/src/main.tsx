@@ -11,6 +11,21 @@ const domain = import.meta.env.VITE_AUTH0_DOMAIN || '';
 const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID || '';
 const audience = import.meta.env.VITE_AUTH0_AUDIENCE || '';
 
+console.log('[main.tsx] Auth0 Configuration:', {
+    domain,
+    clientId,
+    audience,
+    origin: window.location.origin,
+    env: import.meta.env.MODE,
+});
+
+if (!domain || !clientId) {
+    console.error('[main.tsx] ❌ Auth0 credentials missing!', {
+        domain: domain ? '✓' : '❌',
+        clientId: clientId ? '✓' : '❌',
+    });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Auth0Provider
@@ -20,6 +35,8 @@ createRoot(document.getElementById('root')!).render(
         redirect_uri: window.location.origin,
         audience: audience,
       }}
+      cacheLocation="localstorage"
+      useRefreshTokens={true}
     >
       <AuthProvider>
         <SearchProvider>

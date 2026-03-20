@@ -7,8 +7,8 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
   app.enableCors();
 
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.PORT ?? 3007;
   await app.listen(port);
-  console.log(`Service running on http://localhost:${port}/api/v1`);
+  console.log(`[messaging-service] Running on http://localhost:${port}/api/v1`);
 }
 bootstrap();

@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html>
-  <head><title>Keycloak Silent SSO</title></head>
+  <head><title>Auth0 SSO Check</title></head>
   <body>
+    <!-- Auth0 SDK handles SSO checks automatically via parent.postMessage pattern -->
+    <!-- This file is kept for legacy compatibility but is not actively used with Auth0 -->
     <script>
       parent.postMessage(location.href, location.origin);
     </script>
