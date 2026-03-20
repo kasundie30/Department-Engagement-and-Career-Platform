@@ -1,0 +1,60 @@
+mongodb+srv://e20148_db_user:yi6yBWVvjjl7l3l5@decp-co528.kd9hgkc.mongodb.net/?appName=DECP-CO528
+
+username e20148_db_user
+password  yi6yBWVvjjl7l3l5
+
+Cluster name DECP-CO528
+Have added 0.0.0.0/0to the IP acees list
+-------------------------------------------------------------------------------------
+Auth0
+
+tenant name (default one was kept) dev-ql54xjx71jnttf1o
+region US
+
+ApI name DECP-CO528
+identifier-  https://api.decp-co528.com
+
+
+Application - DECP-CO528-WEB
+Single page application - react 
+Client ID	 MUKsKjXPuBpmgamSIKhFl62jhC1kqD88
+Domain dev-ql54xjx71jnttf1o.us.auth0.com
+client secret CHS34_LtnUOW6_Ozpk2D_E-q5fjhzDCRP1hOl6RUU8B1uPC1EiZv_w1LA4extouu
+
+
+
+Application DECP-CO528-BACKEND
+Domain dev-ql54xjx71jnttf1o.us.auth0.com
+Client ID Px8nnn2M5DYGB39ZegCSrgRKqvITbCZ7
+Client Secret cUL3geB08dQKE0yjMP3eOEm8UstPQrqIhF6EatRICN9Rnrz0G2AR_QVm_czfgmy0
+
+Roles -admin, moderator, student, faculty
+-------------------------------------------------------------------------------------
+cloufare R2
+Bucket Name decp-co528
+
+
+Token name decp-co528-render
+Token value- cfat_rFHntm2i6JFm2o3YYVgUSgxcDni1hzajKCsDivJK9573e7ab
+Access Key ID- 	2d08079eafd184c91b9c9d4d21230288
+Secret Access Key- e5db9224ce400e1b3eb39a09e5eb3e61092a95b423d7ec4dbd90bea90660d38a
+Use jurisdiction-specific endpoints for S3 clients: https://165871ed7eb878835d39fbb59c819caf.r2.cloudflarestorage.com
+
+Account ID- 165871ed7eb878835d39fbb59c819caf
+S3 API https://165871ed7eb878835d39fbb59c819caf.r2.cloudflarestorage.com/decp-co528
+
+-------------------------------------------------------------------------------------
+Upstash Redis
+
+Database Name DECP-CO528-Redis
+Region US-EAST-1, AWS
+Endpoint HTTP  https://magical-amoeba-78196.upstash.io
+Token	gQAAAAAAATF0AAIncDJhMGNiNTkzOGQxMGQ0ZTkzYTUzYzFkNGM5MmVjNTM2NXAyNzgxOTY
+Readonly 	ggAAAAAAATF0AAIgcDL9Nah68I-bA-952dk5EXiEzDpsz0PER5i9z2TQ5f243A
+
+Port 6379
+redis-cli --tls -u redis://default:gQAAAAAAATF0AAIncDJhMGNiNTkzOGQxMGQ0ZTkzYTUzYzFkNGM5MmVjNTM2NXAyNzgxOTY@magical-amoeba-78196.upstash.io:6379
+
+Connect - REST
+UPSTASH_REDIS_REST_URL="https://magical-amoeba-78196.upstash.io"
+UPSTASH_REDIS_REST_TOKEN="gQAAAAAAATF0AAIncDJhMGNiNTkzOGQxMGQ0ZTkzYTUzYzFkNGM5MmVjNTM2NXAyNzgxOTY"

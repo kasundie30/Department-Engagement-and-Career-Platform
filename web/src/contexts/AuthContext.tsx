@@ -1,8 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import keycloak, { keycloakInitPromise } from '../lib/keycloak';
-
-// keycloakInitPromise is defined in lib/keycloak.ts so the axios interceptor
-// can also await it — ensuring no API call fires without a token.
+import React, { createContext, useContext } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 
 interface AuthContextType {
     isAuthenticated: boolean;
@@ -12,6 +9,7 @@ interface AuthContextType {
     login: () => void;
     logout: () => void;
     hasRole: (role: string) => boolean;
+    getAccessToken: () => Promise<string | undefined>;
 }
 
 export const AuthContext = createContext<AuthContextType>({
@@ -22,64 +20,67 @@ export const AuthContext = createContext<AuthContextType>({
     login: () => { },
     logout: () => { },
     hasRole: () => false,
+    getAccessToken: async () => undefined,
 });
 
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [isInitialized, setIsInitialized] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [authError, setAuthError] = useState<string | null>(null);
-    const [user, setUser] = useState<any>(null);
+    const {
+        isAuthenticated,
+        isLoading,
+        error,
+        user: auth0User,
+        loginWithRedirect,
+        logout: auth0Logout,
+        getAccessTokenSilently,
+    } = useAuth0();
 
-    useEffect(() => {
-        let isMounted = true;
+    const user = auth0User
+        ? {
+            sub: auth0User.sub,
+            username: auth0User.nickname,
+            firstName: auth0User.given_name,
+            lastName: auth0User.family_name,
+            email: auth0User.email,
+            name: auth0User.name,
+            picture: auth0User.picture,
+            // Custom roles claim set in Auth0 Actions
+            roles: (auth0User[`${import.meta.env.VITE_AUTH0_AUDIENCE}/roles`] ||
+                auth0User['https://department-platform/roles'] || []) as string[],
+        }
+        : null;
 
-        keycloakInitPromise
-            .then(async (authenticated) => {
-                if (!isMounted) return;
-                setIsAuthenticated(authenticated);
-                if (authenticated) {
-                    const token = keycloak.tokenParsed as Record<string, any> | undefined;
-                    const tokenUser = {
-                        sub: token?.sub,
-                        username: token?.preferred_username,
-                        firstName: token?.given_name,
-                        lastName: token?.family_name,
-                        email: token?.email,
-                    };
+    const login = () => loginWithRedirect();
+    const logout = () =>
+        auth0Logout({ logoutParams: { returnTo: window.location.origin } });
 
-                    if (isMounted) setUser(tokenUser);
+    const hasRole = (role: string): boolean =>
+        (user?.roles ?? []).includes(role);
 
-                    try {
-                        const profile = await keycloak.loadUserProfile();
-                        if (isMounted) setUser({ ...tokenUser, ...profile, sub: token?.sub });
-                    } catch (profileError) {
-                        // Some Keycloak setups block /account cross-origin; token claims are enough for UI identity.
-                        console.warn('Keycloak profile fetch failed; using token claims only', profileError);
-                    }
-                }
-                setIsInitialized(true);
-            })
-            .catch((error) => {
-                console.error('Keycloak init failed', error);
-                if (isMounted) {
-                    setAuthError(error instanceof Error ? error.message : 'Authentication initialization failed.');
-                    setIsInitialized(true);
-                }
+    const getAccessToken = async (): Promise<string | undefined> => {
+        try {
+            return await getAccessTokenSilently({
+                authorizationParams: { audience: import.meta.env.VITE_AUTH0_AUDIENCE },
             });
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
-
-    const login = () => keycloak.login();
-    const logout = () => keycloak.logout();
-    const hasRole = (role: string) => keycloak.hasResourceRole(role) || keycloak.hasRealmRole(role);
+        } catch {
+            return undefined;
+        }
+    };
 
     return (
-        <AuthContext.Provider value={{ isAuthenticated, isInitialized, authError, user, login, logout, hasRole }}>
+        <AuthContext.Provider
+            value={{
+                isAuthenticated,
+                isInitialized: !isLoading,
+                authError: error ? error.message : null,
+                user,
+                login,
+                logout,
+                hasRole,
+                getAccessToken,
+            }}
+        >
             {children}
         </AuthContext.Provider>
     );

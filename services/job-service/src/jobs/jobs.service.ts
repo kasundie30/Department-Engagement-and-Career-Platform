@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -55,7 +55,7 @@ export class JobsService {
     const internalToken =
       process.env.INTERNAL_TOKEN || 'miniproject-internal-auth-token';
     fetch(
-      'http://notification-service.miniproject.svc.cluster.local:3006/api/v1/internal/notifications/notify',
+      '${process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006"}/api/v1/internal/notifications/notify',
       {
         method: 'POST',
         headers: {
@@ -109,7 +109,7 @@ export class JobsService {
     const allowed = JOB_TRANSITIONS[job.status];
     if (!allowed.includes(dto.status)) {
       throw new BadRequestException(
-        `Invalid transition: ${job.status} → ${dto.status}. Allowed: [${allowed.join(', ') || 'none'}]`,
+        `Invalid transition: ${job.status} â†’ ${dto.status}. Allowed: [${allowed.join(', ') || 'none'}]`,
       );
     }
     job.status = dto.status;
@@ -145,7 +145,7 @@ export class JobsService {
     const internalToken =
       process.env.INTERNAL_TOKEN || 'miniproject-internal-auth-token';
     fetch(
-      'http://notification-service.miniproject.svc.cluster.local:3006/api/v1/internal/notifications/notify',
+      '${process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006"}/api/v1/internal/notifications/notify',
       {
         method: 'POST',
         headers: {
@@ -182,7 +182,7 @@ export class JobsService {
     const allowed = APP_TRANSITIONS[app.status];
     if (!allowed.includes(dto.status)) {
       throw new BadRequestException(
-        `Invalid transition: ${app.status} → ${dto.status}. Allowed: [${allowed.join(', ') || 'none'}]`,
+        `Invalid transition: ${app.status} â†’ ${dto.status}. Allowed: [${allowed.join(', ') || 'none'}]`,
       );
     }
     app.status = dto.status;
@@ -192,7 +192,7 @@ export class JobsService {
     const internalToken =
       process.env.INTERNAL_TOKEN || 'miniproject-internal-auth-token';
     fetch(
-      'http://notification-service.miniproject.svc.cluster.local:3006/api/v1/internal/notifications/notify',
+      '${process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006"}/api/v1/internal/notifications/notify',
       {
         method: 'POST',
         headers: {
@@ -220,3 +220,4 @@ export class JobsService {
     return this.appModel.find({ jobId: new Types.ObjectId(jobId) }).exec();
   }
 }
+

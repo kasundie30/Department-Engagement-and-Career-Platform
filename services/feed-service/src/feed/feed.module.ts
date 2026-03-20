@@ -6,7 +6,7 @@ import { FeedService } from './feed.service';
 import { FeedController } from './feed.controller';
 import { Post, PostSchema } from './schemas/post.schema';
 import { RedisService } from '../redis/redis.service';
-import { MinioService } from '../minio/minio.service';
+import { R2Service } from '../r2/r2.service';
 
 @Module({
   imports: [
@@ -14,6 +14,6 @@ import { MinioService } from '../minio/minio.service';
     MulterModule.register({ storage: memoryStorage() }),
   ],
   controllers: [FeedController],
-  providers: [FeedService, RedisService, MinioService],
+  providers: [FeedService, RedisService, R2Service],
 })
 export class FeedModule { }

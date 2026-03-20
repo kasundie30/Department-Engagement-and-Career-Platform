@@ -63,7 +63,7 @@ export class FeedController {
     return { imageUrl: url };
   }
 
-  // G2.1: Verify a MinIO object exists by its within-bucket path
+  // G2.1: Verify an R2 object exists by its within-bucket path
   @Get('upload/verify')
   async verifyImage(@Query('path') path: string) {
     if (!path) throw new BadRequestException('path query parameter is required');

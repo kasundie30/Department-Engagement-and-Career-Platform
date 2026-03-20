@@ -1,18 +1,9 @@
-// Mock minio before imports to prevent native binding errors in Jest
-jest.mock('minio', () => ({
-  Client: jest.fn().mockImplementation(() => ({
-    bucketExists: jest.fn().mockResolvedValue(true),
-    makeBucket: jest.fn().mockResolvedValue(undefined),
-    putObject: jest.fn().mockResolvedValue(undefined),
-  })),
-}));
-
 import { Test, TestingModule } from '@nestjs/testing';
 import { FeedService } from './feed.service';
 import { getModelToken } from '@nestjs/mongoose';
 import { Post } from './schemas/post.schema';
 import { RedisService } from '../redis/redis.service';
-import { MinioService } from '../minio/minio.service';
+import { R2Service } from '../r2/r2.service';
 import { NotFoundException } from '@nestjs/common';
 
 const mockPostModel = {
@@ -28,8 +19,9 @@ const mockRedis = {
   keys: jest.fn().mockResolvedValue([]),
 };
 
-const mockMinio = {
+const mockR2 = {
   uploadFile: jest.fn(),
+  statObject: jest.fn(),
 };
 
 describe('FeedService', () => {
@@ -41,7 +33,7 @@ describe('FeedService', () => {
         FeedService,
         { provide: getModelToken(Post.name), useValue: mockPostModel },
         { provide: RedisService, useValue: mockRedis },
-        { provide: MinioService, useValue: mockMinio },
+        { provide: R2Service, useValue: mockR2 },
       ],
     }).compile();
     service = module.get<FeedService>(FeedService);
@@ -104,16 +96,16 @@ describe('FeedService', () => {
   });
 
   describe('uploadImage', () => {
-    it('should call minio uploadFile and return url', async () => {
-      mockMinio.uploadFile.mockResolvedValue(
-        'http://minio/miniproject/posts/test.jpg',
+    it('should call r2 uploadFile and return url', async () => {
+      mockR2.uploadFile.mockResolvedValue(
+        'https://r2.example.com/posts/test.jpg',
       );
       const url = await service.uploadImage(Buffer.from(''), 'image/jpeg');
-      expect(mockMinio.uploadFile).toHaveBeenCalledWith(
+      expect(mockR2.uploadFile).toHaveBeenCalledWith(
         Buffer.from(''),
         'image/jpeg',
       );
-      expect(url).toContain('miniproject');
+      expect(url).toContain('.jpg');
     });
   });
 });

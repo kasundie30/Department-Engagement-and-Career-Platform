@@ -1,0 +1,26 @@
+# Environment variables - NEVER COMMIT THESE
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+
+# Dependencies
+node_modules/
+package-lock.json
+yarn.lock
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

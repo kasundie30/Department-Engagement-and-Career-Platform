@@ -1,46 +1,62 @@
 import { Injectable } from '@nestjs/common';
+import { PassportModule } from '@nestjs/passport';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
+import { passportJwtSecret } from 'jwks-rsa';
 
-// Keycloak JWT payload structure
-// In production this would fetch the public key from Keycloak's JWKS endpoint
+/**
+ * Auth0 JWT verification strategy.
+ * Fetches the RS256 public key from Auth0's JWKS endpoint automatically.
+ * Required env vars:
+ *   AUTH0_DOMAIN   — e.g. "your-tenant.auth0.com"
+ *   AUTH0_AUDIENCE — e.g. "https://api.yourdomain.com"
+ */
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor() {
+    const domain = process.env.AUTH0_DOMAIN || '';
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      // Use KEYCLOAK_PUBLIC_KEY env var; falls back to a placeholder for local dev
-      secretOrKey:
-        (process.env.KEYCLOAK_PUBLIC_KEY || '').replace(/\\n/g, '\n') ||
-        'dev-secret-change-in-production',
-      algorithms: process.env.KEYCLOAK_PUBLIC_KEY ? ['RS256'] : ['HS256'],
+      audience: process.env.AUTH0_AUDIENCE,
+      issuer: domain ? `https://${domain}/` : undefined,
+      algorithms: ['RS256'],
+      secretOrKeyProvider: passportJwtSecret({
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 10,
+        jwksUri: `https://${domain}/.well-known/jwks.json`,
+      }),
     });
   }
 
   async validate(payload: any) {
-    // Keycloak does not always send `name` — it uses preferred_username,
-    // given_name, and family_name instead depending on realm mapper config.
-    // `email` may also be absent if the email mapper is not enabled.
     const name =
       payload.name ||
       [payload.given_name, payload.family_name].filter(Boolean).join(' ') ||
-      payload.preferred_username ||
+      payload.nickname ||
+      payload.email ||
+      payload.sub ||
       'Unknown User';
 
     const email =
       payload.email ||
-      payload.preferred_username ||
-      `${payload.sub}@keycloak.local`;
+      `${payload.sub}@auth0.local`;
+
+    // Auth0 stores custom roles in a namespace claim (configured in Auth0 Actions/Rules)
+    // Convention: https://your-domain.auth0.com/roles claim contains roles array
+    const roles: string[] =
+      payload[`${process.env.AUTH0_AUDIENCE}/roles`] ||
+      payload['https://department-platform/roles'] ||
+      [];
 
     return {
       sub: payload.sub,
       email,
       name,
       role:
-        payload.realm_access?.roles?.find((r: string) =>
-          ['student', 'alumni', 'admin'].includes(r),
-        ) || 'student',
+        roles.find((r: string) => ['student', 'alumni', 'admin'].includes(r)) ||
+        'student',
     };
   }
 }

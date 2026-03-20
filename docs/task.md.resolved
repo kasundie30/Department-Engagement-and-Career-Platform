@@ -1,0 +1,54 @@
+# Render + Vercel Deployment Task
+
+## Planning
+- [x] Explore full project structure
+- [x] Identify all env vars per service
+- [x] Identify internal Kubernetes DNS URLs needing env var replacement
+- [x] Update plan for Auth0, R2, Upstash, Atlas decisions
+- [x] Update implementation plan
+
+## Execution
+
+### Delete Docker Files
+- [x] Remove all Dockerfiles, Dockerfile.deploy, .dockerignore from all services
+
+### Services — Auth0 JWT Strategy (all 8 services)
+- [x] Install `jwks-rsa` in each service package.json
+- [x] Update [src/auth/strategies/jwt.strategy.ts](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/services/user-service/src/auth/strategies/jwt.strategy.ts) in all 8 services → Auth0 JWKS
+
+### Services — Internal URL Env Var (feed, job, event, research)
+- [x] Replace hardcoded `cluster.local` notification-service URL with `NOTIFICATION_SERVICE_URL` env var
+
+### Services — R2 (feed-service)
+- [x] Replace [minio.service.ts](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/services/feed-service/src/minio/minio.service.ts) → `r2.service.ts` using `@aws-sdk/client-s3`
+- [x] Update [feed.module.ts](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/services/feed-service/src/feed/feed.module.ts) (MinioService → R2Service)
+- [x] Update [feed-service/package.json](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/services/feed-service/package.json) (remove minio, add @aws-sdk/client-s3 + @aws-sdk/lib-storage)
+
+### Services — R2 (research-service)
+- [x] Update [research.service.ts](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/services/research-service/src/research/research.service.ts) MinIO → R2 (AWS SDK)
+- [x] Update [research-service/package.json](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/services/research-service/package.json)
+
+### Services — .env.example (all 8 services)
+- [x] Create `.env.example` for each service (Auth0, R2, Upstash URLs documented)
+
+### Web App — Auth0 Migration
+- [x] Update [web/package.json](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/web/package.json) (remove keycloak-js, add @auth0/auth0-react)
+- [x] Replace [web/src/lib/keycloak.ts](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/web/src/lib/keycloak.ts) → `web/src/lib/auth0.ts`
+- [x] Replace [web/src/contexts/AuthContext.tsx](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/web/src/contexts/AuthContext.tsx) → Auth0 version
+- [x] Update [web/src/lib/axios.ts](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/web/src/lib/axios.ts) → service URL routing + Auth0 token
+
+### Web App — Centralized Service URLs
+- [x] Create `web/src/config/services.ts`
+- [x] Update [web/src/lib/axios.ts](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/web/src/lib/axios.ts) to resolve service URLs and route properly
+- [x] Update [web/vite.config.ts](file:///d:/ACADEMICS/Semester%207/CO528%20Applied%20Software%20Architecture/6%20Mini%20Project/Department-Engagement-and-Career-Platform/web/vite.config.ts) (remove ingress proxy, no longer needed)
+- [x] Create `web/.env.example`
+
+### Documentation
+- [x] Create `docs/DEPLOYMENT.md`
+
+## Verification
+- [x] Confirm web TypeScript compiles (`npm run build`) — ✓ Built successfully with Auth0
+- [x] Services configured for Dockerfile-less Render native NodeJS deployment
+- [x] All service code updated to use Auth0 JWT strategy
+- [x] Feed & Research services migrated from MinIO to Cloudflare R2 (AWS SDK v3)
+- [x] Internal service URLs centralized to environment variables

@@ -1,4 +1,4 @@
-import {
+﻿import {
     Injectable,
     NotFoundException,
     ForbiddenException,
@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import * as Minio from 'minio';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { Research, ResearchMongo, ResearchStatus } from './schemas/research.schema';
 import {
     CreateResearchDto,
@@ -15,31 +15,32 @@ import {
     InviteCollaboratorDto,
 } from './dto/research.dto';
 
+/**
+ * Cloudflare R2 (S3-compatible) for research document storage.
+ * Required env vars:
+ *   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME, R2_PUBLIC_URL
+ */
 @Injectable()
 export class ResearchService {
-    private minioClient: Minio.Client;
-    private readonly bucket = 'research-docs';
+    private readonly r2Client: S3Client;
+    private readonly bucket: string;
+    private readonly publicUrl: string;
 
     constructor(
         @InjectModel(Research.name) private researchModel: Model<ResearchMongo>,
     ) {
-        this.minioClient = new Minio.Client({
-            endPoint: process.env.MINIO_ENDPOINT || 'minio',
-            port: parseInt(process.env.MINIO_PORT || '9000'),
-            useSSL: false,
-            accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
-            secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
-        });
-        this.ensureBucket();
-    }
+        const accountId = process.env.R2_ACCOUNT_ID || '';
+        this.bucket = process.env.R2_BUCKET_NAME || 'research-docs';
+        this.publicUrl = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
 
-    private async ensureBucket() {
-        try {
-            const exists = await this.minioClient.bucketExists(this.bucket);
-            if (!exists) await this.minioClient.makeBucket(this.bucket, 'us-east-1');
-        } catch (e) {
-            console.warn('[research-service] MinIO bucket check failed:', e.message);
-        }
+        this.r2Client = new S3Client({
+            region: 'auto',
+            endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+            credentials: {
+                accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+                secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+            },
+        });
     }
 
     async create(ownerId: string, dto: CreateResearchDto): Promise<ResearchMongo> {
@@ -92,7 +93,7 @@ export class ResearchService {
         // G8.1: Fire-and-forget collaboration invite notification to the invited user
         if (!alreadyMember) {
             const internalToken = process.env.INTERNAL_TOKEN || 'miniproject-internal-auth-token';
-            fetch('http://notification-service.miniproject.svc.cluster.local:3006/api/v1/internal/notifications/notify', {
+            fetch(`${process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006"}/api/v1/internal/notifications/notify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'x-internal-token': internalToken },
                 body: JSON.stringify({
@@ -126,7 +127,7 @@ export class ResearchService {
     ): Promise<ResearchMongo> {
         const project = await this.findById(id);
 
-        // G5.2: Block uploads to archived projects (checked before MinIO so works even when MinIO is down)
+        // G5.2: Block uploads to archived projects
         if (project.status === ResearchStatus.ARCHIVED) {
             throw new BadRequestException('Cannot upload documents to an archived project');
         }
@@ -137,30 +138,33 @@ export class ResearchService {
         if (!isOwnerOrCollaborator)
             throw new ForbiddenException('Only project members can upload documents');
 
-        const minioKey = `${id}/${Date.now()}-${file.originalname}`;
+        const r2Key = `${id}/${Date.now()}-${file.originalname}`;
         try {
-            await this.minioClient.putObject(
-                this.bucket,
-                minioKey,
-                file.buffer,
-                file.size,
-                { 'Content-Type': file.mimetype },
+            await this.r2Client.send(
+                new PutObjectCommand({
+                    Bucket: this.bucket,
+                    Key: r2Key,
+                    Body: file.buffer,
+                    ContentType: file.mimetype,
+                }),
             );
-        } catch (minioError) {
+        } catch (r2Error) {
             throw new ServiceUnavailableException('Document storage is temporarily unavailable');
         }
 
         try {
             project.documents.push({
                 name: file.originalname,
-                minioKey,
+                minioKey: r2Key,           // field name kept for schema compatibility
                 uploadedAt: new Date(),
-                size: file.size,   // G5.1: store byte size as proof of successful MinIO upload
+                size: file.size,
             });
             return await project.save();
         } catch (dbError) {
-            await this.minioClient.removeObject(this.bucket, minioKey).catch(err => {
-                console.error('Failed to cleanup MinIO object after DB failure:', err);
+            await this.r2Client.send(
+                new DeleteObjectCommand({ Bucket: this.bucket, Key: r2Key }),
+            ).catch(err => {
+                console.error('Failed to cleanup R2 object after DB failure:', err);
             });
             throw dbError;
         }

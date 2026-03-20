@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   NotFoundException,
   BadRequestException,
@@ -12,7 +12,7 @@ import {
 } from './schemas/event.schema';
 import { CreateEventDto, UpdateEventStatusDto } from './dto/event.dto';
 
-// Valid status transitions: upcoming → live|cancelled, live → ended|cancelled (terminal: ended, cancelled)
+// Valid status transitions: upcoming â†’ live|cancelled, live â†’ ended|cancelled (terminal: ended, cancelled)
 const EVENT_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
   [EventStatus.UPCOMING]: [EventStatus.LIVE, EventStatus.CANCELLED],
   [EventStatus.LIVE]: [EventStatus.ENDED, EventStatus.CANCELLED],
@@ -38,7 +38,7 @@ export class EventsService {
     const internalToken =
       process.env.INTERNAL_TOKEN || 'miniproject-internal-auth-token';
     fetch(
-      'http://notification-service.miniproject.svc.cluster.local:3006/api/v1/internal/notifications/notify',
+      '${process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006"}/api/v1/internal/notifications/notify',
       {
         method: 'POST',
         headers: {
@@ -83,7 +83,7 @@ export class EventsService {
     const allowed = EVENT_TRANSITIONS[event.status];
     if (!allowed.includes(dto.status)) {
       throw new BadRequestException(
-        `Invalid transition: ${event.status} → ${dto.status}. Allowed: [${allowed.join(', ') || 'none'}]`,
+        `Invalid transition: ${event.status} â†’ ${dto.status}. Allowed: [${allowed.join(', ') || 'none'}]`,
       );
     }
     event.status = dto.status;
@@ -95,7 +95,7 @@ export class EventsService {
         process.env.INTERNAL_TOKEN || 'miniproject-internal-auth-token';
       for (const attendeeId of saved.rsvps) {
         fetch(
-          'http://notification-service.miniproject.svc.cluster.local:3006/api/v1/internal/notifications/notify',
+          '${process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006"}/api/v1/internal/notifications/notify',
           {
             method: 'POST',
             headers: {
@@ -159,3 +159,4 @@ export class EventsService {
     return event.rsvps;
   }
 }
+

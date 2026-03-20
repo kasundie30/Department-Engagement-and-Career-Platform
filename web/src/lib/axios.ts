@@ -1,38 +1,68 @@
 import axios from 'axios';
-import keycloak, { keycloakInitPromise } from './keycloak';
+import { SERVICE_URLS } from '../config/services';
 
-// baseURL is intentionally empty — each component constructs the full path
-// Service routes follow the ingress pattern: /{service-name}/api/v1/{endpoint}
-// Example: /feed-service/api/v1/posts
+/**
+ * Axios instance with automatic service URL resolution.
+ *
+ * Components continue to use the same API call pattern:
+ *   api.get('/api/v1/user-service/users/me')
+ *
+ * This interceptor detects the service name in the path and rewrites the
+ * request to the correct Render service URL from services.ts:
+ *   /api/v1/user-service/users/me
+ *   → https://<user-service>.onrender.com/api/v1/users/me
+ *
+ * This means NO component code needs to change.
+ */
 export const api = axios.create({
     baseURL: '',
-    timeout: 10000,
+    timeout: 15000,
     headers: {
         'Content-Type': 'application/json',
     },
 });
 
-// Request interceptor to attach Bearer token.
-// Awaits keycloakInitPromise first so that requests fired during initial render
-// (before the token is available) still get the Authorization header.
+// Token getter — set by Auth0 after init (avoids circular import with AuthContext)
+let _getToken: (() => Promise<string | undefined>) | null = null;
+export function setTokenGetter(fn: () => Promise<string | undefined>) {
+    _getToken = fn;
+}
+
+/** Rewrite /api/v1/{service-name}/... → {serviceBaseUrl}/api/v1/... */
+function resolveUrl(path: string): string | null {
+    // Match: /api/v1/{service-name}/{rest}
+    const match = path.match(/^\/api\/v1\/([\w-]+)\/(.*)/);
+    if (!match) return null;
+    const [, serviceName, rest] = match;
+    const baseUrl = SERVICE_URLS[serviceName];
+    if (!baseUrl) return null;
+    return `${baseUrl}/api/v1/${rest}`;
+}
+
+// Request interceptor: resolve service URL + attach Bearer token
 api.interceptors.request.use(
     async (config) => {
-        // Wait for Keycloak to finish the auth code exchange before trying to
-        // read the token — fixes 401s on the first batch of requests after login.
-        await keycloakInitPromise;
-
-        if (keycloak.token) {
-            try {
-                await keycloak.updateToken(30); // Refresh if it expires in <= 30 seconds
-                config.headers.Authorization = `Bearer ${keycloak.token}`;
-            } catch (error) {
-                console.error('Failed to refresh token', error);
-                keycloak.login();
+        // Resolve the absolute URL if the path starts with /api/v1/{service-name}/
+        if (config.url && config.url.startsWith('/api/v1/')) {
+            const resolved = resolveUrl(config.url);
+            if (resolved) {
+                config.url = resolved;
             }
         }
+
+        // Attach Auth0 Bearer token
+        if (_getToken) {
+            try {
+                const token = await _getToken();
+                if (token) {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+            } catch (err) {
+                console.warn('[axios] Could not get access token', err);
+            }
+        }
+
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error),
 );

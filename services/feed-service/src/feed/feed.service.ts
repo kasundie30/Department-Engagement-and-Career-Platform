@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Post, PostDocument } from './schemas/post.schema';
 import { CreatePostDto } from './dto/post.dto';
 import { RedisService } from '../redis/redis.service';
-import { MinioService } from '../minio/minio.service';
+import { R2Service } from '../r2/r2.service';
 
 const FEED_CACHE_TTL = 60; // seconds
 
@@ -13,7 +13,7 @@ export class FeedService {
   constructor(
     @InjectModel(Post.name) private postModel: Model<PostDocument>,
     private readonly redis: RedisService,
-    private readonly minio: MinioService,
+    private readonly r2: R2Service,
   ) { }
 
   async create(userId: string, role: string, dto: CreatePostDto): Promise<PostDocument> {
@@ -85,7 +85,7 @@ export class FeedService {
 
     if (userId !== post.userId?.toString()) {
       const internalToken = process.env.INTERNAL_TOKEN || 'miniproject-internal-auth-token';
-      fetch('http://notification-service.miniproject.svc.cluster.local:3006/api/v1/internal/notifications/notify', {
+      fetch('${process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006"}/api/v1/internal/notifications/notify', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -117,11 +117,12 @@ export class FeedService {
   }
 
   async uploadImage(buffer: Buffer, mimetype: string): Promise<string> {
-    return this.minio.uploadFile(buffer, mimetype);
+    return this.r2.uploadFile(buffer, mimetype);
   }
 
-  // G2.1: Verify a MinIO object exists by its path within the bucket
+  // G2.1: Verify an R2 object exists by its path within the bucket
   async verifyImage(objectPath: string): Promise<{ exists: boolean; size: number; contentType: string }> {
-    return this.minio.statObject(objectPath);
+    return this.r2.statObject(objectPath);
   }
 }
+
