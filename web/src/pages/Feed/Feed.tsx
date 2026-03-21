@@ -4,7 +4,8 @@ import { api } from '../../lib/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
 import { proxyMediaUrl } from '../../lib/mediaUrl';
-import { resolveUser, getUserInitials, UserInfo } from '../../lib/userCache';
+import { resolveUser, getUserInitials } from '../../lib/userCache';
+import type { UserInfo } from '../../lib/userCache';
 import './Feed.css';
 
 interface Post {
