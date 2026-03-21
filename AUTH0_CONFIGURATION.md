@@ -1,6 +1,6 @@
 # Auth0 RBAC Configuration Guide
 
-This platform uses **Auth0** for identity and role-based access control (RBAC). User roles correspond to: `student`, `alumni`, and `admin`. Follow these steps to correctly configure the Role payloads so the front-end applications (Web & Mobile) can conditionally render authorized UI components.
+This platform uses **Auth0** for identity and role-based access control (RBAC). User roles correspond to: `student`, `alumni`,`researcher` and `admin`. Follow these steps to correctly configure the Role payloads so the front-end applications (Web & Mobile) can conditionally render authorized UI components.
 
 ---
 
