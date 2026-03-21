@@ -3,22 +3,15 @@ import 'package:delta/core/config/app_config.dart';
 import 'package:delta/features/auth/repositories/auth_repository.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-final dioProvider = Provider<Dio>((ref) {
-  final authRepository = ref.watch(authRepositoryProvider);
-  final appConfig = ref.watch(appConfigProvider);
-
-  final parsedBaseUrl = Uri.tryParse(appConfig.apiBaseUrl);
-  final hasValidBaseUrl =
-      parsedBaseUrl != null && parsedBaseUrl.hasScheme && parsedBaseUrl.hasAuthority;
-  if (!hasValidBaseUrl) {
-    throw StateError('Invalid API_BASE_URL. Expected a valid absolute URL.');
-  }
-
+/// Creates a Dio instance with JWT auth injection and 401-retry logic pointed
+/// at [baseUrl]. Each service gets its own provider to avoid a single shared
+/// base URL. Token refresh is handled via [AuthRepository].
+Dio _buildDio(String baseUrl, AuthRepository authRepository) {
   final dio = Dio(
     BaseOptions(
-      baseUrl: appConfig.apiBaseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      baseUrl: baseUrl,
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 15),
       headers: {
         'Content-Type': 'application/json',
       },
@@ -35,7 +28,8 @@ final dioProvider = Provider<Dio>((ref) {
         return handler.next(options);
       },
       onError: (DioException e, handler) async {
-        if (e.response?.statusCode == 401 && e.requestOptions.extra['retriedWithRefresh'] != true) {
+        if (e.response?.statusCode == 401 &&
+            e.requestOptions.extra['retriedWithRefresh'] != true) {
           final refreshedToken = await authRepository.refreshAccessToken();
           if (refreshedToken != null) {
             final retryRequest = e.requestOptions;
@@ -56,4 +50,58 @@ final dioProvider = Provider<Dio>((ref) {
   );
 
   return dio;
+}
+
+/// Legacy single-provider — kept for backward compatibility with tests.
+/// Resolves to [userDioProvider].
+final dioProvider = Provider<Dio>((ref) => ref.watch(userDioProvider));
+
+// --- Per-service Dio providers ---
+
+final userDioProvider = Provider<Dio>((ref) {
+  final auth = ref.watch(authRepositoryProvider);
+  final config = ref.watch(appConfigProvider);
+  return _buildDio('${config.userServiceUrl}/api/v1', auth);
+});
+
+final feedDioProvider = Provider<Dio>((ref) {
+  final auth = ref.watch(authRepositoryProvider);
+  final config = ref.watch(appConfigProvider);
+  return _buildDio('${config.feedServiceUrl}/api/v1', auth);
+});
+
+final jobDioProvider = Provider<Dio>((ref) {
+  final auth = ref.watch(authRepositoryProvider);
+  final config = ref.watch(appConfigProvider);
+  return _buildDio('${config.jobServiceUrl}/api/v1', auth);
+});
+
+final eventDioProvider = Provider<Dio>((ref) {
+  final auth = ref.watch(authRepositoryProvider);
+  final config = ref.watch(appConfigProvider);
+  return _buildDio('${config.eventServiceUrl}/api/v1', auth);
+});
+
+final notificationDioProvider = Provider<Dio>((ref) {
+  final auth = ref.watch(authRepositoryProvider);
+  final config = ref.watch(appConfigProvider);
+  return _buildDio('${config.notificationServiceUrl}/api/v1', auth);
+});
+
+final researchDioProvider = Provider<Dio>((ref) {
+  final auth = ref.watch(authRepositoryProvider);
+  final config = ref.watch(appConfigProvider);
+  return _buildDio('${config.researchServiceUrl}/api/v1', auth);
+});
+
+final analyticsDioProvider = Provider<Dio>((ref) {
+  final auth = ref.watch(authRepositoryProvider);
+  final config = ref.watch(appConfigProvider);
+  return _buildDio('${config.analyticsServiceUrl}/api/v1', auth);
+});
+
+final messagingDioProvider = Provider<Dio>((ref) {
+  final auth = ref.watch(authRepositoryProvider);
+  final config = ref.watch(appConfigProvider);
+  return _buildDio('${config.messagingServiceUrl}/api/v1', auth);
 });

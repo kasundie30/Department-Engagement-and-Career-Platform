@@ -4,7 +4,7 @@ import '../../../core/network/dio_client.dart';
 import '../models/event_model.dart';
 
 final eventRepositoryProvider = Provider((ref) {
-  final dio = ref.watch(dioProvider);
+  final dio = ref.watch(eventDioProvider);
   return EventRepository(dio);
 });
 
@@ -16,7 +16,7 @@ class EventRepository {
   Future<List<Event>> fetchEvents({String status = 'UPCOMING'}) async {
     try {
       final response = await _dio.get(
-        '/event-service/events',
+        '/events',
         queryParameters: {'status': status},
       );
       
@@ -32,7 +32,7 @@ class EventRepository {
 
   Future<void> rsvpEvent(String eventId) async {
     try {
-      await _dio.post('/event-service/events/$eventId/rsvp');
+      await _dio.post('/events/$eventId/rsvp');
     } catch (e) {
       throw Exception('Failed to RSVP: $e');
     }

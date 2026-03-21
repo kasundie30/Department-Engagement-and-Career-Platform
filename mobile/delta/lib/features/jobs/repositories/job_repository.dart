@@ -4,7 +4,7 @@ import '../../../core/network/dio_client.dart';
 import '../models/job_model.dart';
 
 final jobRepositoryProvider = Provider((ref) {
-  final dio = ref.watch(dioProvider);
+  final dio = ref.watch(jobDioProvider);
   return JobRepository(dio);
 });
 
@@ -19,7 +19,7 @@ class JobRepository {
       if (status != null) queryParams['status'] = status.toUpperCase();
       if (type != null && type != 'All') queryParams['type'] = type;
 
-      final response = await _dio.get('/job-service/jobs', queryParameters: queryParams);
+      final response = await _dio.get('/jobs', queryParameters: queryParams);
       
       if (response.statusCode == 200) {
         final data = response.data['data'] as List;
@@ -33,7 +33,7 @@ class JobRepository {
 
   Future<void> applyForJob(String jobId) async {
     try {
-      await _dio.post('/job-service/jobs/$jobId/apply');
+      await _dio.post('/jobs/$jobId/apply');
     } catch (e) {
       throw Exception('Failed to apply for job: $e');
     }

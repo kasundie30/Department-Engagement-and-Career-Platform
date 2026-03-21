@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 enum AppEnvironment {
   emulator,
   // USB-only debug mode used with `adb reverse`.
-  // Keep this separate so it can be removed cleanly when robust device mode is the only path.
   usb,
   device,
   release,
@@ -27,51 +26,94 @@ class AppConfigException implements Exception {
 }
 
 class AppConfig {
-  final String apiBaseUrl;
+  // --- Auth0 / OIDC ---
   final String oidcDiscoveryUrl;
   final String oidcClientId;
   final String oidcRedirectUri;
+  final String oidcAudience;
+
+  // --- Per-service production URLs ---
+  final String userServiceUrl;
+  final String feedServiceUrl;
+  final String jobServiceUrl;
+  final String eventServiceUrl;
+  final String notificationServiceUrl;
+  final String researchServiceUrl;
+  final String analyticsServiceUrl;
+  final String messagingServiceUrl;
+
   final AppEnvironment appEnvironment;
 
   const AppConfig._({
-    required this.apiBaseUrl,
     required this.oidcDiscoveryUrl,
     required this.oidcClientId,
     required this.oidcRedirectUri,
+    required this.oidcAudience,
+    required this.userServiceUrl,
+    required this.feedServiceUrl,
+    required this.jobServiceUrl,
+    required this.eventServiceUrl,
+    required this.notificationServiceUrl,
+    required this.researchServiceUrl,
+    required this.analyticsServiceUrl,
+    required this.messagingServiceUrl,
     required this.appEnvironment,
   });
 
-  factory AppConfig.unsafe({
-    required String apiBaseUrl,
-    required String oidcDiscoveryUrl,
-    required String oidcClientId,
-    required String oidcRedirectUri,
-    required AppEnvironment appEnvironment,
-  }) {
-    return AppConfig._(
-      apiBaseUrl: apiBaseUrl,
-      oidcDiscoveryUrl: oidcDiscoveryUrl,
-      oidcClientId: oidcClientId,
-      oidcRedirectUri: oidcRedirectUri,
-      appEnvironment: appEnvironment,
-    );
-  }
-
+  // Production Render service URLs as compile-time constants. Override with
+  // --dart-define=USER_SERVICE_URL=... for local/staging environments.
   factory AppConfig.fromEnvironment() {
     return AppConfig._(
-      apiBaseUrl: const String.fromEnvironment('API_BASE_URL', defaultValue: ''),
       oidcDiscoveryUrl: const String.fromEnvironment(
         'OIDC_DISCOVERY_URL',
-        defaultValue: '',
+        defaultValue:
+            'https://dev-ql54xjx71jnttf1o.us.auth0.com/.well-known/openid-configuration',
       ),
-      oidcClientId: const String.fromEnvironment('OIDC_CLIENT_ID', defaultValue: ''),
+      oidcClientId: const String.fromEnvironment(
+        'OIDC_CLIENT_ID',
+        defaultValue: 'MUKsKjXPuBpmgamSIKhFl62jhC1kqD88',
+      ),
       oidcRedirectUri: const String.fromEnvironment(
         'OIDC_REDIRECT_URI',
-        defaultValue: '',
+        defaultValue: 'com.example.delta://login-callback',
+      ),
+      oidcAudience: const String.fromEnvironment(
+        'OIDC_AUDIENCE',
+        defaultValue: 'https://api.decp-co528.com',
+      ),
+      userServiceUrl: const String.fromEnvironment(
+        'USER_SERVICE_URL',
+        defaultValue: 'https://user-service-a60z.onrender.com',
+      ),
+      feedServiceUrl: const String.fromEnvironment(
+        'FEED_SERVICE_URL',
+        defaultValue: 'https://feed-service-oafo.onrender.com',
+      ),
+      jobServiceUrl: const String.fromEnvironment(
+        'JOB_SERVICE_URL',
+        defaultValue: 'https://job-service-h3pb.onrender.com',
+      ),
+      eventServiceUrl: const String.fromEnvironment(
+        'EVENT_SERVICE_URL',
+        defaultValue: 'https://event-service-at2l.onrender.com',
+      ),
+      notificationServiceUrl: const String.fromEnvironment(
+        'NOTIFICATION_SERVICE_URL',
+        defaultValue: 'https://notification-service-n0ph.onrender.com',
+      ),
+      researchServiceUrl: const String.fromEnvironment(
+        'RESEARCH_SERVICE_URL',
+        defaultValue: 'https://research-service-befz.onrender.com',
+      ),
+      analyticsServiceUrl: const String.fromEnvironment(
+        'ANALYTICS_SERVICE_URL',
+        defaultValue: 'https://analytics-service-5ppc.onrender.com',
+      ),
+      messagingServiceUrl: const String.fromEnvironment(
+        'MESSAGING_SERVICE_URL',
+        defaultValue: 'https://messaging-service-dss7.onrender.com',
       ),
       appEnvironment: _parseEnvironment(
-        // Defaults to device for safety. USB/emulator/device/release should still be
-        // explicitly set in run profiles to avoid ambiguous behavior.
         const String.fromEnvironment('APP_ENV', defaultValue: 'device'),
       ),
     ).validated();
@@ -79,11 +121,28 @@ class AppConfig {
 
   factory AppConfig.fromMap(Map<String, String> env) {
     return AppConfig._(
-      apiBaseUrl: env['API_BASE_URL'] ?? '',
-      oidcDiscoveryUrl: env['OIDC_DISCOVERY_URL'] ?? '',
-      oidcClientId: env['OIDC_CLIENT_ID'] ?? '',
-      oidcRedirectUri: env['OIDC_REDIRECT_URI'] ?? '',
-      appEnvironment: _parseEnvironment(env['APP_ENV'] ?? ''),
+      oidcDiscoveryUrl: env['OIDC_DISCOVERY_URL'] ??
+          'https://dev-ql54xjx71jnttf1o.us.auth0.com/.well-known/openid-configuration',
+      oidcClientId: env['OIDC_CLIENT_ID'] ?? 'MUKsKjXPuBpmgamSIKhFl62jhC1kqD88',
+      oidcRedirectUri: env['OIDC_REDIRECT_URI'] ?? 'com.example.delta://login-callback',
+      oidcAudience: env['OIDC_AUDIENCE'] ?? 'https://api.decp-co528.com',
+      userServiceUrl:
+          env['USER_SERVICE_URL'] ?? 'https://user-service-a60z.onrender.com',
+      feedServiceUrl:
+          env['FEED_SERVICE_URL'] ?? 'https://feed-service-oafo.onrender.com',
+      jobServiceUrl:
+          env['JOB_SERVICE_URL'] ?? 'https://job-service-h3pb.onrender.com',
+      eventServiceUrl:
+          env['EVENT_SERVICE_URL'] ?? 'https://event-service-at2l.onrender.com',
+      notificationServiceUrl: env['NOTIFICATION_SERVICE_URL'] ??
+          'https://notification-service-n0ph.onrender.com',
+      researchServiceUrl:
+          env['RESEARCH_SERVICE_URL'] ?? 'https://research-service-befz.onrender.com',
+      analyticsServiceUrl: env['ANALYTICS_SERVICE_URL'] ??
+          'https://analytics-service-5ppc.onrender.com',
+      messagingServiceUrl: env['MESSAGING_SERVICE_URL'] ??
+          'https://messaging-service-dss7.onrender.com',
+      appEnvironment: _parseEnvironment(env['APP_ENV'] ?? 'device'),
     ).validated();
   }
 
@@ -94,9 +153,6 @@ class AppConfig {
   AppConfig validated() {
     final errors = <String>[];
 
-    if (apiBaseUrl.trim().isEmpty) {
-      errors.add('API_BASE_URL is required.');
-    }
     if (oidcDiscoveryUrl.trim().isEmpty) {
       errors.add('OIDC_DISCOVERY_URL is required.');
     }
@@ -105,11 +161,6 @@ class AppConfig {
     }
     if (oidcRedirectUri.trim().isEmpty) {
       errors.add('OIDC_REDIRECT_URI is required.');
-    }
-
-    final apiUri = Uri.tryParse(apiBaseUrl);
-    if (apiBaseUrl.trim().isNotEmpty && !_isValidAbsoluteUri(apiUri)) {
-      errors.add('API_BASE_URL must be a valid absolute URL.');
     }
 
     final discoveryUri = Uri.tryParse(oidcDiscoveryUrl);
@@ -123,12 +174,6 @@ class AppConfig {
     }
 
     if (requiresHttps) {
-      if ((apiUri?.scheme.toLowerCase() ?? '') != 'https') {
-        errors.add(
-          'API_BASE_URL must use https for APP_ENV=device or APP_ENV=release.',
-        );
-      }
-
       if ((discoveryUri?.scheme.toLowerCase() ?? '') != 'https') {
         errors.add(
           'OIDC_DISCOVERY_URL must use https for APP_ENV=device or APP_ENV=release.',
@@ -170,14 +215,11 @@ class AppConfig {
 }
 
 void _logResolvedConfig(AppConfig config, {required String source}) {
-  final api = Uri.tryParse(config.apiBaseUrl);
-  final discovery = Uri.tryParse(config.oidcDiscoveryUrl);
-
   developer.log(
     'Resolved AppConfig from $source: env=${config.appEnvironment.name}, '
     'requiresHttps=${config.requiresHttps}, '
-    'api=${api?.scheme ?? 'invalid'}://${api?.host ?? 'invalid'}:${api?.port ?? ''}, '
-    'oidc=${discovery?.scheme ?? 'invalid'}://${discovery?.host ?? 'invalid'}:${discovery?.port ?? ''}',
+    'userService=${config.userServiceUrl}, '
+    'oidc=${config.oidcDiscoveryUrl}',
     name: 'delta.app_config',
   );
 }

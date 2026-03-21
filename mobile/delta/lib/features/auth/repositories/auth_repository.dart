@@ -22,7 +22,7 @@ final userRoleProvider = FutureProvider<List<String>>((ref) async {
   final authRepo = ref.watch(authRepositoryProvider);
   final profile = await authRepo.getProfile();
   if (profile == null) return [];
-  final roles = profile['roles'] ?? profile['https://api.decp.com/roles'] ?? [];
+  final roles = profile['roles'] ?? profile['https://api.decp-co528.com/roles'] ?? [];
   return (roles is List) ? roles.map((e) => e.toString()).toList() : [roles.toString()];
 });
 
@@ -209,7 +209,7 @@ class AuthRepository {
     if (profile == null) return false;
 
     // auth0 custom claim usually comes under a namespace or 'roles'
-    final roles = profile['roles'] ?? profile['https://api.decp.com/roles'] ?? [];
+    final roles = profile['roles'] ?? profile['https://api.decp-co528.com/roles'] ?? [];
     if (roles is List) {
       return roles.contains(role);
     } else if (roles is String) {

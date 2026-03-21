@@ -4,7 +4,7 @@ import '../../../core/network/dio_client.dart';
 import '../models/notification_model.dart';
 
 final notificationRepositoryProvider = Provider((ref) {
-  final dio = ref.watch(dioProvider);
+  final dio = ref.watch(notificationDioProvider);
   return NotificationRepository(dio);
 });
 
@@ -16,7 +16,7 @@ class NotificationRepository {
   Future<List<NotificationModel>> fetchNotifications({int page = 1, int limit = 20}) async {
     try {
       final response = await _dio.get(
-        '/notification-service/notifications',
+        '/notifications',
         queryParameters: {'page': page, 'limit': limit},
       );
       
@@ -32,7 +32,7 @@ class NotificationRepository {
 
   Future<int> fetchUnreadCount() async {
     try {
-      final response = await _dio.get('/notification-service/notifications/unread-count');
+      final response = await _dio.get('/notifications/unread-count');
       if (response.statusCode == 200) {
         return response.data['data']['count'] ?? 0;
       }
@@ -45,7 +45,7 @@ class NotificationRepository {
 
   Future<void> markAsRead(String notificationId) async {
     try {
-      await _dio.patch('/notification-service/notifications/$notificationId/read');
+      await _dio.patch('/notifications/$notificationId/read');
     } catch (e) {
       throw Exception('Failed to mark notification as read: $e');
     }
@@ -53,7 +53,7 @@ class NotificationRepository {
 
   Future<void> markAllAsRead() async {
     try {
-      await _dio.patch('/notification-service/notifications/read-all');
+      await _dio.patch('/notifications/read-all');
     } catch (e) {
       throw Exception('Failed to mark all as read: $e');
     }

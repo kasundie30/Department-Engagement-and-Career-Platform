@@ -1,0 +1,11 @@
+Found 4 connected devices:
+  Pixel 6a (mobile) • 32201JEGR09712 • android-arm64  • Android 16 (API 36)
+  Windows (desktop) • windows        • windows-x64    • Microsoft Windows [Version 10.0.19045.6466]
+  Chrome (web)      • chrome         • web-javascript • Google Chrome 146.0.7680.80
+  Edge (web)        • edge           • web-javascript • Microsoft Edge 146.0.3856.62
+
+Device emulator-5554 is offline.
+
+Run "flutter emulators" to list and start any available device emulators.
+
+If you expected another device to be detected, please run "flutter doctor" to diagnose potential issues. You may also try increasing the time to wait for connected devices with the "--device-timeout" flag. Visit https://flutter.dev/setup/ for troubleshooting tips.

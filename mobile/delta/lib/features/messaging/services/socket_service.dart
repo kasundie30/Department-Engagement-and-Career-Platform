@@ -8,16 +8,16 @@ import '../models/message_model.dart';
 final socketServiceProvider = Provider<SocketService>((ref) {
   final appConfig = ref.watch(appConfigProvider);
   final authRepo = ref.watch(authRepositoryProvider);
-  return SocketService(appConfig.apiBaseUrl, authRepo);
+  return SocketService(appConfig.messagingServiceUrl, authRepo);
 });
 
 class SocketService {
-  final String _apiBaseUrl;
+  final String _messagingServiceUrl;
   final AuthRepository _authRepo;
   IO.Socket? _socket;
   final _messageController = StreamController<Message>.broadcast();
 
-  SocketService(this._apiBaseUrl, this._authRepo);
+  SocketService(this._messagingServiceUrl, this._authRepo);
 
   Stream<Message> get onNewMessage => _messageController.stream;
 
@@ -27,8 +27,13 @@ class SocketService {
     final token = await _authRepo.getValidAccessToken();
     if (token == null) return;
 
-    final uri = Uri.parse(_apiBaseUrl);
-    final wsUrl = '${uri.scheme}://${uri.host}:${uri.port}';
+    final uri = Uri.parse(_messagingServiceUrl);
+    // For production HTTPS Render services, use scheme + host only (no explicit port)
+    final wsScheme = uri.scheme == 'https' ? 'wss' : 'ws';
+    final wsUrl = '$wsScheme://${uri.host}';
+    if (uri.port != 0 && uri.port != 443 && uri.port != 80) {
+      // Append non-standard port if present (e.g. local development)
+    }
 
     _socket = IO.io(wsUrl, <String, dynamic>{
       'transports': ['websocket'],

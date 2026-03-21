@@ -5,7 +5,7 @@ import '../models/conversation_model.dart';
 import '../models/message_model.dart';
 
 final messagingRepositoryProvider = Provider((ref) {
-  final dio = ref.watch(dioProvider);
+  final dio = ref.watch(messagingDioProvider);
   return MessagingRepository(dio);
 });
 
@@ -16,7 +16,7 @@ class MessagingRepository {
 
   Future<List<Conversation>> fetchConversations() async {
     try {
-      final response = await _dio.get('/messaging-service/conversations');
+      final response = await _dio.get('/conversations');
       if (response.statusCode == 200) {
         final data = response.data as List;
         return data.map((json) => Conversation.fromJson(json)).toList();
@@ -29,7 +29,7 @@ class MessagingRepository {
 
   Future<List<Message>> fetchMessages(String conversationId) async {
     try {
-      final response = await _dio.get('/messaging-service/conversations/$conversationId/messages');
+      final response = await _dio.get('/conversations/$conversationId/messages');
       if (response.statusCode == 200) {
         final data = (response.data['items'] ?? response.data ?? []) as List;
         return data.map((json) => Message.fromJson(json)).toList();
@@ -42,7 +42,7 @@ class MessagingRepository {
 
   Future<Conversation> createDirectMessage(String participantId) async {
     try {
-      final response = await _dio.post('/messaging-service/conversations/dm', data: {
+      final response = await _dio.post('/conversations/dm', data: {
         'participantId': participantId,
       });
       if (response.statusCode == 201 || response.statusCode == 200) {

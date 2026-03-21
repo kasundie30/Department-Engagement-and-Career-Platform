@@ -4,7 +4,7 @@ import '../../../core/network/dio_client.dart';
 import '../models/analytics_model.dart';
 
 final analyticsRepositoryProvider = Provider((ref) {
-  final dio = ref.watch(dioProvider);
+  final dio = ref.watch(analyticsDioProvider);
   return AnalyticsRepository(dio);
 });
 
@@ -15,7 +15,7 @@ class AnalyticsRepository {
 
   Future<AnalyticsOverview> fetchOverview() async {
     try {
-      final response = await _dio.get('/analytics-service/analytics/overview');
+      final response = await _dio.get('/analytics/overview');
       if (response.statusCode == 200) {
         return AnalyticsOverview.fromJson(response.data['data']);
       }
@@ -27,7 +27,7 @@ class AnalyticsRepository {
 
   Future<List<DailyUserRegistration>> fetchUserRegistrations() async {
     try {
-      final response = await _dio.get('/analytics-service/analytics/users');
+      final response = await _dio.get('/analytics/users');
       if (response.statusCode == 200) {
         final data = response.data['data']['dailyRegistrations'] as List;
         return data.map((json) => DailyUserRegistration.fromJson(json)).toList();
@@ -40,7 +40,7 @@ class AnalyticsRepository {
 
   Future<List<ServiceMetric>> fetchServiceLatencies() async {
     try {
-      final response = await _dio.get('/analytics-service/analytics/latencies');
+      final response = await _dio.get('/analytics/latencies');
       if (response.statusCode == 200) {
         final data = response.data['data'] as List;
         return data.map((json) => ServiceMetric.fromJson(json)).toList();

@@ -4,7 +4,7 @@ import '../../../core/network/dio_client.dart';
 import '../models/post_model.dart';
 
 final feedRepositoryProvider = Provider((ref) {
-  final dio = ref.watch(dioProvider);
+  final dio = ref.watch(feedDioProvider);
   return FeedRepository(dio);
 });
 
@@ -22,7 +22,7 @@ class FeedRepository {
       };
 
       // Assuming the Feed Service is exposed at /feed-service under api/v1
-      final response = await _dio.get('/feed-service/posts', queryParameters: queryParams);
+      final response = await _dio.get('/posts', queryParameters: queryParams);
       
       if (response.statusCode == 200) {
         final data = response.data['data'] as List;
@@ -36,7 +36,7 @@ class FeedRepository {
 
   Future<void> likePost(String postId) async {
     try {
-      await _dio.post('/feed-service/posts/$postId/like');
+      await _dio.post('/posts/$postId/like');
     } catch (e) {
       throw Exception('Failed to like post: $e');
     }
@@ -51,7 +51,7 @@ class FeedRepository {
       });
 
       final response = await _dio.post(
-        '/feed-service/posts',
+        '/posts',
         data: formData,
         options: Options(contentType: 'multipart/form-data'),
       );

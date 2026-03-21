@@ -4,7 +4,7 @@ import '../../../core/network/dio_client.dart';
 import '../models/research_model.dart';
 
 final researchRepositoryProvider = Provider((ref) {
-  final dio = ref.watch(dioProvider);
+  final dio = ref.watch(researchDioProvider);
   return ResearchRepository(dio);
 });
 
@@ -15,7 +15,7 @@ class ResearchRepository {
 
   Future<List<ResearchProject>> fetchProjects() async {
     try {
-      final response = await _dio.get('/research-service/research');
+      final response = await _dio.get('/research');
       if (response.statusCode == 200) {
         final data = response.data['data'] as List;
         return data.map((json) => ResearchProject.fromJson(json)).toList();
@@ -29,7 +29,7 @@ class ResearchRepository {
   // File uploads will be mocked for demo if no direct MinIO connectivity exists
   Future<void> createProject(String title, String description, List<String> tags) async {
     try {
-      await _dio.post('/research-service/research', data: {
+      await _dio.post('/research', data: {
         'title': title,
         'description': description,
         'tags': tags,
