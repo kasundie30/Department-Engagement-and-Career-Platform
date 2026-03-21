@@ -8,27 +8,32 @@ import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 export class UsersService {
   constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) { }
 
-  async upsertFromKeycloak(dto: CreateUserDto): Promise<UserDocument> {
-    // Match by keycloakId first; fall back to email match to handle Keycloak
+  async upsertFromAuth0(dto: CreateUserDto): Promise<UserDocument> {
+    // Match by auth0Id first; fall back to email match to handle Auth0
     // user re-creation (deleted + recreated → new sub, same email).
     // Without the $or, a duplicate unique email causes a 500 crash.
     return this.userModel.findOneAndUpdate(
-      { $or: [{ keycloakId: dto.keycloakId }, { email: dto.email }] },
-      { $set: dto },
+      { $or: [{ auth0Id: dto.auth0Id }, { email: dto.email }] },
+      { $set: { ...dto, lastActiveAt: new Date() } },
       { upsert: true, new: true },
     );
   }
 
-  async findMe(keycloakId: string): Promise<UserDocument | null> {
-    return this.userModel.findOne({ keycloakId });
+  async findMe(auth0Id: string): Promise<UserDocument | null> {
+    const user = await this.userModel.findOneAndUpdate(
+      { auth0Id },
+      { $set: { lastActiveAt: new Date() } },
+      { new: true },
+    );
+    return user;
   }
 
   async updateMe(
-    keycloakId: string,
+    auth0Id: string,
     dto: UpdateUserDto,
   ): Promise<UserDocument> {
     const user = await this.userModel.findOneAndUpdate(
-      { keycloakId },
+      { auth0Id },
       { $set: dto },
       { new: true },
     );

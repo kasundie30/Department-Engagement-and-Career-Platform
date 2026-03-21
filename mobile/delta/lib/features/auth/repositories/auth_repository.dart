@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'dart:convert';
 
 import 'package:delta/core/config/app_config.dart';
 import 'package:flutter_appauth/flutter_appauth.dart';
@@ -16,6 +17,14 @@ final authRepositoryProvider = Provider((ref) {
 // Using the provider from dio_client.dart
 // (We re-declare it here simply or import it)
 final secureStorageProvider = Provider((ref) => const FlutterSecureStorage());
+
+final userRoleProvider = FutureProvider<List<String>>((ref) async {
+  final authRepo = ref.watch(authRepositoryProvider);
+  final profile = await authRepo.getProfile();
+  if (profile == null) return [];
+  final roles = profile['roles'] ?? profile['https://api.decp.com/roles'] ?? [];
+  return (roles is List) ? roles.map((e) => e.toString()).toList() : [roles.toString()];
+});
 
 class AuthRepository {
   static const _accessTokenKey = 'access_token';
@@ -169,6 +178,44 @@ class AuthRepository {
   Future<bool> isLoggedIn() async {
     final token = await getValidAccessToken();
     return token != null;
+  }
+
+  Future<Map<String, dynamic>?> getProfile() async {
+    final idToken = await _secureStorage.read(key: _idTokenKey);
+    final accessToken = await getValidAccessToken();
+
+    // Use idToken for profile claims, or fallback to access token
+    final tokenToParse = idToken ?? accessToken;
+    if (tokenToParse == null) return null;
+
+    try {
+      final parts = tokenToParse.split('.');
+      if (parts.length != 3) return null;
+      var payload = parts[1];
+      // Pad base64 string
+      payload = payload.padRight(payload.length + (4 - payload.length % 4) % 4, '=');
+      final decoded = utf8.decode(base64Url.decode(payload));
+      final Map<String, dynamic> data = jsonDecode(decoded);
+      // The id could be mapped as sub from Auth0
+      data['id'] = data['sub'];
+      return data;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<bool> hasRole(String role) async {
+    final profile = await getProfile();
+    if (profile == null) return false;
+
+    // auth0 custom claim usually comes under a namespace or 'roles'
+    final roles = profile['roles'] ?? profile['https://api.decp.com/roles'] ?? [];
+    if (roles is List) {
+      return roles.contains(role);
+    } else if (roles is String) {
+      return roles == role;
+    }
+    return false;
   }
 
   Future<void> _persistTokens({

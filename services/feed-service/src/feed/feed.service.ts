@@ -1,10 +1,13 @@
-﻿import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Post, PostDocument } from './schemas/post.schema';
-import { CreatePostDto } from './dto/post.dto';
+import { Comment, CommentDocument } from './schemas/comment.schema';
+import { CreatePostDto, CreateCommentDto } from './dto/post.dto';
 import { RedisService } from '../redis/redis.service';
 import { R2Service } from '../r2/r2.service';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
 const FEED_CACHE_TTL = 60; // seconds
 
@@ -12,8 +15,10 @@ const FEED_CACHE_TTL = 60; // seconds
 export class FeedService {
   constructor(
     @InjectModel(Post.name) private postModel: Model<PostDocument>,
+    @InjectModel(Comment.name) private commentModel: Model<CommentDocument>,
     private readonly redis: RedisService,
     private readonly r2: R2Service,
+    private readonly httpService: HttpService,
   ) { }
 
   async create(userId: string, role: string, dto: CreatePostDto): Promise<PostDocument> {
@@ -85,21 +90,21 @@ export class FeedService {
 
     if (userId !== post.userId?.toString()) {
       const internalToken = process.env.INTERNAL_TOKEN || 'miniproject-internal-auth-token';
-      fetch('${process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006"}/api/v1/internal/notifications/notify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-internal-token': internalToken,
-        },
-        body: JSON.stringify({
+      firstValueFrom(
+        this.httpService.post(`${process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006"}/api/v1/internal/notifications/notify`, {
           userId: post.userId.toString(),
           type: 'post_liked',
           message: `User ${userId} liked your post`,
           idempotencyKey: `post_liked:${postId}:${userId}`,
-        }),
-      }).then(res => {
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-token': internalToken,
+          }
+        })
+      ).then(res => {
         console.log(`[DEBUG] HTTP Internal Notification responded with status: ${res.status}`);
-      }).catch(err => console.error('[DEBUG] Failed to send internal notification:', err));
+      }).catch(err => console.error('[DEBUG] Failed to send internal notification:', err?.message));
     }
 
     return post;
@@ -113,7 +118,91 @@ export class FeedService {
       { new: true },
     );
     if (!post) throw new NotFoundException('Post not found');
+    await this.redis
+      .keys('feed:page:*')
+      .then((keys) => Promise.all(keys.map((k) => this.redis.del(k))));
     return post;
+  }
+
+  async sharePost(postId: string): Promise<PostDocument> {
+    const post = await this.postModel.findByIdAndUpdate(
+      postId,
+      { $inc: { shareCount: 1 } },
+      { new: true },
+    );
+    if (!post) throw new NotFoundException('Post not found');
+    await this.redis
+      .keys('feed:page:*')
+      .then((keys) => Promise.all(keys.map((k) => this.redis.del(k))));
+    return post;
+  }
+
+  async addComment(postId: string, userId: string, dto: CreateCommentDto): Promise<CommentDocument> {
+    if (!Types.ObjectId.isValid(postId)) throw new NotFoundException('Post not found');
+    const postObjId = new Types.ObjectId(postId);
+    
+    // Create comment
+    const comment = await this.commentModel.create({
+      postId: postObjId,
+      userId,
+      content: dto.content,
+    });
+
+    // Increment comment count
+    const post = await this.postModel.findByIdAndUpdate(
+      postId,
+      { $inc: { commentCount: 1 } },
+      { new: true }
+    );
+    if (!post) throw new NotFoundException('Post not found');
+
+    // Invalidate feed cache
+    await this.redis
+      .keys('feed:page:*')
+      .then((keys) => Promise.all(keys.map((k) => this.redis.del(k))));
+
+    if (userId !== post.userId?.toString()) {
+      const internalToken = process.env.INTERNAL_TOKEN || 'miniproject-internal-auth-token';
+      firstValueFrom(
+        this.httpService.post(`${process.env.NOTIFICATION_SERVICE_URL || "http://localhost:3006"}/api/v1/internal/notifications/notify`, {
+          userId: post.userId.toString(),
+          type: 'post_commented',
+          message: `User ${userId} commented on your post`,
+          idempotencyKey: `post_commented:${postId}:${comment._id}`,
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-internal-token': internalToken,
+          }
+        })
+      ).then(res => {
+        console.log(`[DEBUG] HTTP Internal Notification responded with status: ${res.status}`);
+      }).catch(err => console.error('[DEBUG] Failed to send internal notification:', err?.message));
+    }
+
+    return comment;
+  }
+
+  async getComments(postId: string, page: number, limit: number): Promise<{ items: CommentDocument[], meta: { totalPages: number, page: number } }> {
+    if (!Types.ObjectId.isValid(postId)) throw new NotFoundException('Post not found');
+    const postObjId = new Types.ObjectId(postId);
+
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      this.commentModel
+        .find({ postId: postObjId })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.commentModel.countDocuments({ postId: postObjId }),
+    ]);
+
+    return {
+      items,
+      meta: { totalPages: Math.ceil(total / limit) || 1, page },
+    };
   }
 
   async uploadImage(buffer: Buffer, mimetype: string): Promise<string> {

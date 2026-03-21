@@ -83,7 +83,7 @@ class _MainShellState extends ConsumerState<MainShell> {
                 ),
                 IconButton(
                   icon: const Icon(Icons.chat_bubble_outline),
-                  onPressed: () {},
+                  onPressed: () => context.push('/messaging'),
                 ),
               ],
             ),

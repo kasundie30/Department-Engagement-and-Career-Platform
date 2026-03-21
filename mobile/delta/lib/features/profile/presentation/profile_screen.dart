@@ -146,25 +146,35 @@ class ProfileScreen extends ConsumerWidget {
                       context.push('/research');
                     },
                   ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: Icon(Icons.analytics, color: Colors.purple[400]),
-                    title: const Text('System Analytics'),
-                    subtitle: const Text('Metrics & Latency (Admin)'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      context.push('/analytics');
-                    },
-                  ),
-                  const Divider(height: 1),
-                  ListTile(
-                    leading: Icon(Icons.developer_board, color: Colors.blueGrey[400]),
-                    title: const Text('Infrastructure Status'),
-                    subtitle: const Text('Databases & CI/CD (Admin)'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      context.push('/infrastructure');
-                    },
+                  ref.watch(userRoleProvider).when(
+                    data: (roles) => roles.contains('admin')
+                        ? Column(
+                            children: [
+                              const Divider(height: 1),
+                              ListTile(
+                                leading: Icon(Icons.analytics, color: Colors.purple[400]),
+                                title: const Text('System Analytics'),
+                                subtitle: const Text('Metrics & Latency (Admin)'),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () {
+                                  context.push('/analytics');
+                                },
+                              ),
+                              const Divider(height: 1),
+                              ListTile(
+                                leading: Icon(Icons.developer_board, color: Colors.blueGrey[400]),
+                                title: const Text('Infrastructure Status'),
+                                subtitle: const Text('Databases & CI/CD (Admin)'),
+                                trailing: const Icon(Icons.chevron_right),
+                                onTap: () {
+                                  context.push('/infrastructure');
+                                },
+                              ),
+                            ],
+                          )
+                        : const SizedBox.shrink(),
+                    loading: () => const SizedBox.shrink(),
+                    error: (_, __) => const SizedBox.shrink(),
                   ),
                 ],
               ),

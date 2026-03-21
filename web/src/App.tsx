@@ -11,6 +11,7 @@ import { Notifications } from './pages/Notifications/Notifications';
 import { Profile } from './pages/Profile/Profile';
 import { Analytics } from './pages/Analytics/Analytics';
 import { InfraStatus } from './pages/InfraStatus/InfraStatus';
+import { Messaging } from './pages/Messaging/Messaging';
 const Unauthorized = () => <div><h1 style={{ padding: '2rem' }}>403 Unauthorized: You do not have permission to view this page.</h1></div>;
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
         <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
         <Route path="/research" element={<ProtectedRoute><Research /></ProtectedRoute>} />
         <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+        <Route path="/messaging" element={<ProtectedRoute><Messaging /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
         {/* Admin routes */}

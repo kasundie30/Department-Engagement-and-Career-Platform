@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../providers/job_provider.dart';
 import '../models/job_model.dart';
+import '../../auth/repositories/auth_repository.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
@@ -30,6 +31,13 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
       appBar: AppBar(
         title: const Text('Jobs & Internships'),
         actions: [
+          ref.watch(userRoleProvider).when(
+            data: (roles) => (roles.contains('admin') || roles.contains('alumni'))
+                ? IconButton(icon: const Icon(Icons.add), onPressed: () {})
+                : const SizedBox.shrink(),
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
           IconButton(icon: const Icon(Icons.bookmark_outline), onPressed: () {}),
           IconButton(icon: const Icon(Icons.search), onPressed: () {}),
         ],
@@ -231,14 +239,20 @@ class JobCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              FilledButton(
-                onPressed: onApply,
-                style: FilledButton.styleFrom(
-                  backgroundColor: theme.colorScheme.primary,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
-                ),
-                child: const Text('Apply'),
+              ref.watch(userRoleProvider).when(
+                data: (roles) => roles.contains('alumni')
+                    ? const SizedBox.shrink()
+                    : FilledButton(
+                        onPressed: onApply,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 0),
+                        ),
+                        child: const Text('Apply'),
+                      ),
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
               ),
             ],
           ),

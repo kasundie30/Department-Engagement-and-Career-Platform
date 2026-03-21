@@ -11,8 +11,8 @@ export enum UserRole {
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ required: true, unique: true })
-  keycloakId: string;
+  @Prop({ required: true, unique: true, sparse: true })
+  auth0Id: string;
 
   @Prop({ required: true, unique: true, index: true })
   email: string;
@@ -39,6 +39,9 @@ export class User {
 
   @Prop({ type: [String], default: [] })
   skills: string[];
+
+  @Prop({ type: Date, default: Date.now, index: true })
+  lastActiveAt: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

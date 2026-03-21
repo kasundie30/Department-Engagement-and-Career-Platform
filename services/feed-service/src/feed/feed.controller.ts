@@ -11,10 +11,11 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FeedService } from './feed.service';
-import { CreatePostDto, PaginationDto } from './dto/post.dto';
+import { CreatePostDto, PaginationDto, CreateCommentDto } from './dto/post.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('feed')
@@ -51,9 +52,34 @@ export class FeedController {
     return this.feedService.likePost(id, req.user.sub, req.headers.authorization);
   }
 
-  @Delete(':id/like')
-  async unlike(@Param('id') id: string, @Request() req) {
-    return this.feedService.unlikePost(id, req.user.sub);
+  @Post(':id/unlike')
+  async unlikePost(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    const userId = req.user.sub;
+    return this.feedService.unlikePost(id, userId);
+  }
+
+  @Post(':id/share')
+  async sharePost(@Param('id') id: string) {
+    return this.feedService.sharePost(id);
+  }
+
+  @Post(':id/comment')
+  async comment(@Param('id') id: string, @Request() req, @Body() dto: CreateCommentDto) {
+    return this.feedService.addComment(id, req.user.sub, dto);
+  }
+
+  @Get(':id/comments')
+  async getComments(
+    @Param('id') id: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNum = Number(page) || 1;
+    const limitNum = Number(limit) || 10;
+    return this.feedService.getComments(id, pageNum, limitNum);
   }
 
   @Post('upload')

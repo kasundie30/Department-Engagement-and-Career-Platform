@@ -27,12 +27,11 @@ export class UsersController {
       return existing;
     }
 
-    // First login: user authenticated via Keycloak but not yet in MongoDB.
+    // First login: user authenticated via Auth0 but not yet in MongoDB.
     // Auto-provision their profile from the JWT claims.
-    // Fallbacks guard against Keycloak realms that omit email/name mappers.
-    return this.usersService.upsertFromKeycloak({
-      keycloakId: req.user.sub,
-      email: req.user.email || `${req.user.sub}@keycloak.local`,
+    return this.usersService.upsertFromAuth0({
+      auth0Id: req.user.sub,
+      email: req.user.email || `${req.user.sub}@auth0.local`,
       name: req.user.name || 'Unknown User',
       role: req.user.role || 'student',
     });

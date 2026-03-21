@@ -14,6 +14,8 @@ import '../../features/notifications/presentation/notifications_screen.dart';
 import '../../features/research/presentation/research_screen.dart';
 import '../../features/analytics/presentation/analytics_screen.dart';
 import '../../features/infrastructure/presentation/infrastructure_screen.dart';
+import '../../features/messaging/presentation/conversation_list_screen.dart';
+import '../../features/messaging/presentation/chat_screen.dart';
 
 // Placeholder screens for tab navigation
 class PlaceholderScreen extends StatelessWidget {
@@ -106,6 +108,19 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/infrastructure',
         builder: (context, state) => const InfrastructureScreen(),
+      ),
+      GoRoute(
+        path: '/messaging',
+        builder: (context, state) => const ConversationListScreen(),
+        routes: [
+          GoRoute(
+            path: ':id',
+            builder: (context, state) {
+              final id = state.pathParameters['id']!;
+              return ChatScreen(conversationId: id);
+            },
+          ),
+        ],
       ),
     ],
   );

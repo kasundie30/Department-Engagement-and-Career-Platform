@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Image, Send, ThumbsUp, MessageSquare, MoreHorizontal } from 'lucide-react';
+import { Image, Send, ThumbsUp, MessageSquare, MoreHorizontal, Share2 } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
@@ -13,6 +13,7 @@ interface Post {
     imageUrl?: string;
     likes: string[];
     comments: any[];
+    shareCount?: number;
     createdAt: string;
 }
 
@@ -34,6 +35,18 @@ export const Feed: React.FC = () => {
     const [imgErrors, setImgErrors] = useState<Set<string>>(new Set());
     const handleImgError = (postId: string) =>
         setImgErrors(prev => new Set(prev).add(postId));
+
+    const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
+    const [commentTexts, setCommentTexts] = useState<Record<string, string>>({});
+
+    const toggleComments = (postId: string) => {
+        setExpandedComments(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(postId)) newSet.delete(postId);
+            else newSet.add(postId);
+            return newSet;
+        });
+    };
 
     const fetchPosts = async (pageNum: number, currentFilter: string, append = false) => {
         try {
@@ -140,6 +153,33 @@ export const Feed: React.FC = () => {
         } catch (err) {
             console.error('Failed to like post', err);
             // Revert in real app
+        }
+    };
+
+    const handleShare = async (postId: string) => {
+        try {
+            setPosts(prev => prev.map(p => p._id === postId ? { ...p, shareCount: (p.shareCount || 0) + 1 } : p));
+            await api.post(`/api/v1/feed-service/feed/${postId}/share`);
+        } catch (err) {
+            console.error('Failed to share post', err);
+        }
+    };
+
+    const handleAddComment = async (postId: string) => {
+        const text = commentTexts[postId];
+        if (!text || !text.trim()) return;
+
+        try {
+            const res = await api.post(`/api/v1/feed-service/feed/${postId}/comments`, { content: text.trim() });
+            setPosts(prev => prev.map(p => {
+                if (p._id === postId) {
+                    return { ...p, comments: [...(p.comments || []), res.data] };
+                }
+                return p;
+            }));
+            setCommentTexts(prev => ({ ...prev, [postId]: '' }));
+        } catch (err) {
+            console.error('Failed to add comment', err);
         }
     };
 
@@ -255,11 +295,50 @@ export const Feed: React.FC = () => {
                                         <ThumbsUp size={18} />
                                         <span>{(post.likes ?? []).length} Likes</span>
                                     </button>
-                                    <button className="action-btn">
+                                    <button 
+                                        className={`action-btn ${expandedComments.has(post._id) ? 'active' : ''}`}
+                                        onClick={() => toggleComments(post._id)}
+                                    >
                                         <MessageSquare size={18} />
                                         <span>{(post.comments ?? []).length} Comments</span>
                                     </button>
+                                    <button className="action-btn" onClick={() => handleShare(post._id)}>
+                                        <Share2 size={18} />
+                                        <span>{post.shareCount || 0} Shares</span>
+                                    </button>
                                 </div>
+                                {expandedComments.has(post._id) && (
+                                    <div className="post-comments-section" style={{ padding: '15px 20px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-secondary)' }}>
+                                        <div className="comments-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '15px' }}>
+                                            {(post.comments || []).map((c: any) => (
+                                                <div key={c._id} className="comment-item" style={{ background: 'var(--card-bg)', padding: '10px 15px', borderRadius: '8px' }}>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '0.85rem', marginBottom: '4px' }}>{c.userId.substring(0, 8)}...</div>
+                                                    <div style={{ fontSize: '0.95rem' }}>{c.content}</div>
+                                                </div>
+                                            ))}
+                                            {(post.comments || []).length === 0 && (
+                                                <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>No comments yet.</div>
+                                            )}
+                                        </div>
+                                        <div className="comment-input-area" style={{ display: 'flex', gap: '10px' }}>
+                                            <input
+                                                type="text"
+                                                placeholder="Write a comment..."
+                                                value={commentTexts[post._id] || ''}
+                                                onChange={e => setCommentTexts(prev => ({ ...prev, [post._id]: e.target.value }))}
+                                                style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid var(--border-color)', background: 'var(--card-bg)' }}
+                                                onKeyDown={e => e.key === 'Enter' && handleAddComment(post._id)}
+                                            />
+                                            <button 
+                                                onClick={() => handleAddComment(post._id)}
+                                                disabled={!commentTexts[post._id]?.trim()}
+                                                style={{ background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                            >
+                                                <Send size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         ))}
 

@@ -8,11 +8,16 @@ import {
   Notification,
   NotificationSchema,
 } from './schemas/notification.schema';
+import {
+  DeviceToken,
+  DeviceTokenSchema,
+} from './schemas/device-token.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Notification.name, schema: NotificationSchema },
+      { name: DeviceToken.name, schema: DeviceTokenSchema },
     ]),
   ],
   controllers: [NotificationsController, InternalController],

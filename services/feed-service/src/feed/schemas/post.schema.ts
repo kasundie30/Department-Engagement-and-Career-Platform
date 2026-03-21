@@ -22,6 +22,9 @@ export class Post {
 
   @Prop({ default: 0 })
   commentCount: number;
+
+  @Prop({ default: 0 })
+  shareCount: number;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Post);

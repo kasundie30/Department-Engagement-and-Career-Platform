@@ -1,0 +1,123 @@
+﻿  console.log
+    [DEBUG] HTTP Internal Notification responded with status: 200
+
+      at feed/feed.service.ts:163:17
+
+npx : FAIL src/feed/feed.service.spec.ts (49.704 s)
+At line:1 char:147
++ ... -service" ; npx jest --testPathPatterns 
+feed.service.spec 2>&1 | Out- ...
++                 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL src/feed 
+   /f...c.ts (49.704 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  FeedService
+    create
+      ΓêÜ should create a post and invalidate cache (19 ms)
+    getFeed
+      ├ù should return cached result on cache hit (4 ms)
+      ├ù should query DB on cache miss and store result in 
+cache (6 ms)
+    likePost
+      ├ù should add like to post (4 ms)
+      ΓêÜ should throw NotFoundException if post not found 
+(4 ms)
+    uploadImage
+      ΓêÜ should call r2 uploadFile and return url (2 ms)
+    addComment
+      ΓêÜ should create a comment and increment post 
+commentCount (25 ms)
+    getComments
+      ΓêÜ should return paginated comments (3 ms)
+
+  ΓùÅ FeedService ΓÇ║ getFeed ΓÇ║ should return cached 
+result on cache hit
+
+    TypeError: Cannot read properties of undefined 
+(reading '0')
+
+    [0m [90m 78 |[39m       mockRedis[33m.[39m[36mget
+[39m[33m.[39mmockResolvedValue(cached)[33m;[39m
+     [90m 79 |[39m       [36mconst[39m result 
+[33m=[39m [36mawait[39m 
+service[33m.[39mgetFeed([35m1[39m[33m,[39m 
+[35m10[39m[33m,[39m undefined)[33m;[39m
+    [31m[1m>[22m[39m[90m 80 |[39m       expect(result
+[33m.[39mitems[[35m0[39m])[33m.[39mtoHaveProperty([3
+2m'content'[39m[33m,[39m [32m'cached'[39m)[33m;[39m
+     [90m    |[39m                          
+[31m[1m^[22m[39m
+     [90m 81 |[39m       expect(mockPostModel[33m.[39mf
+ind)[33m.[39mnot[33m.[39mtoHaveBeenCalled()[33m;[39m
+     [90m 82 |[39m     })[33m;[39m
+     [90m 83 |[39m[0m
+
+      at Object.<anonymous> 
+(feed/feed.service.spec.ts:80:26)
+
+  ΓùÅ FeedService ΓÇ║ getFeed ΓÇ║ should query DB on cache 
+miss and store result in cache
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "feed:page:1", Any<String>, 60
+    Received: "feed:page:1:limit:10:role:all", "{\"items\":
+[{\"content\":\"db-post\"}],\"meta\":{\"totalPages\":1,\"pa
+ge\":1}}", 60
+
+    Number of calls: 1
+
+    [0m [90m 91 |[39m       [36mconst[39m result 
+[33m=[39m [36mawait[39m 
+service[33m.[39mgetFeed([35m1[39m[33m,[39m 
+[35m10[39m[33m,[39m undefined)[33m;[39m
+     [90m 92 |[39m       expect(result[33m.[39mitems[[
+35m0[39m])[33m.[39mtoHaveProperty([32m'content'[39m[3
+3m,[39m [32m'db-post'[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 93 |[39m       expect(mockRe
+dis[33m.[39m[36mset[39m)[33m.[39mtoHaveBeenCalledWith
+(
+     [90m    |[39m                             
+[31m[1m^[22m[39m
+     [90m 94 |[39m         
+[32m'feed:page:1'[39m[33m,[39m
+     [90m 95 |[39m         
+expect[33m.[39many([33mString[39m)[33m,[39m
+     [90m 96 |[39m         [35m60[39m[33m,[39m[0m
+
+      at Object.<anonymous> 
+(feed/feed.service.spec.ts:93:29)
+
+  ΓùÅ FeedService ΓÇ║ likePost ΓÇ║ should add like to post
+
+    TypeError: Cannot read properties of undefined 
+(reading 'toString')
+
+    [0m [90m 93 |[39m       firstValueFrom(
+     [90m 94 |[39m         [36mthis[39m[33m.[39mhttpS
+ervice[33m.[39mpost([32m`${process.env.NOTIFICATION_SERV
+ICE_URL || "http://localhost:3006"}/api/v1/internal/notific
+ations/notify`[39m[33m,[39m {
+    [31m[1m>[22m[39m[90m 95 |[39m           
+userId[33m:[39m 
+post[33m.[39muserId[33m.[39mtoString()[33m,[39m
+     [90m    |[39m                               
+[31m[1m^[22m[39m
+     [90m 96 |[39m           type[33m:[39m 
+[32m'post_liked'[39m[33m,[39m
+     [90m 97 |[39m           message[33m:[39m 
+[32m`User ${userId} liked your post`[39m[33m,[39m
+     [90m 98 |[39m           idempotencyKey[33m:[39m 
+[32m`post_liked:${postId}:${userId}`[39m[33m,[39m[0m
+
+      at FeedService.likePost (feed/feed.service.ts:95:31)
+      at Object.<anonymous> 
+(feed/feed.service.spec.ts:105:22)
+
+Test Suites: 1 failed, 1 total
+Tests:       3 failed, 5 passed, 8 total
+Snapshots:   0 total
+Time:        50.251 s
+Ran all test suites matching feed.service.spec.

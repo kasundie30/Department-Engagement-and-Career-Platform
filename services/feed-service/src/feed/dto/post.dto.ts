@@ -20,3 +20,10 @@ export class PaginationDto {
   @IsOptional()
   role?: string;
 }
+
+export class CreateCommentDto {
+  @IsString()
+  @MinLength(1)
+  content: string;
+}
+

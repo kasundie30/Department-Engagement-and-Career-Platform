@@ -8,10 +8,13 @@ import {
   Body,
   UseGuards,
   Request,
+  Req,
+  BadRequestException,
 } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotificationsService } from './notifications.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CreateNotificationDto } from './dto/notification.dto';
+import { TokenType } from './schemas/device-token.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('notifications')
@@ -51,9 +54,24 @@ export class NotificationsController {
   }
 
   /** Mark a single notification as read */
-  @Patch(':id/read')
-  async markRead(@Param('id') id: string, @Request() req) {
-    return this.notificationsService.markRead(id, req.user.sub);
+  @Post(':id/read')
+  async markRead(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.sub;
+    return this.notificationsService.markRead(id, userId);
+  }
+
+  @Post('tokens')
+  async registerToken(
+    @Req() req: any,
+    @Body('token') token: string,
+    @Body('type') type: TokenType,
+  ) {
+    if (!token || !type) {
+      throw new BadRequestException('Token and type are required');
+    }
+    const userId = req.user.sub;
+    await this.notificationsService.registerToken(userId, token, type);
+    return { success: true };
   }
 
   /** Mark all notifications as read */

@@ -121,7 +121,7 @@ export const Events: React.FC = () => {
         }
     };
 
-    const isAdmin = hasRole('admin');
+    const canCreateEvent = hasRole('admin') || hasRole('alumni');
 
     const { query } = useSearch();
     const filteredEvents = query
@@ -135,7 +135,7 @@ export const Events: React.FC = () => {
                     <h1>Upcoming Events</h1>
                     <p className="subtitle">Join seminars, workshops, and networking sessions.</p>
                 </div>
-                {isAdmin && (
+                {canCreateEvent && (
                     <button className="primary-btn" onClick={() => setShowModal(true)}>
                         <Plus size={18} />
                         <span>Create Event</span>

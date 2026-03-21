@@ -1,0 +1,71 @@
+﻿npx : PASS src/health/health.controller.spec.ts (6.592 s)
+At line:1 char:147
++ ... nt-and-Career-Platform\services\user-service" ; npx 
+jest 2>&1 | Out-F ...
++                                                     
+~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PASS src/heal 
+   th...ec.ts (6.592 s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+PASS src/auth/guards/roles.guard.spec.ts (10.377 s)
+PASS src/app.controller.spec.ts (10.408 s)
+FAIL src/users/users.service.spec.ts (19.94 s)
+  ΓùÅ UsersService ΓÇ║ findMe ΓÇ║ should return user when 
+found
+
+    expect(received).toHaveProperty(path, value)
+
+    Matcher error: received value must not be null nor 
+undefined
+
+    Received has value: undefined
+
+    [0m [90m 33 |[39m       })[33m;[39m
+     [90m 34 |[39m       [36mconst[39m result 
+[33m=[39m [36mawait[39m 
+service[33m.[39mfindMe([32m'auth0-123'[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 35 |[39m       expect(result
+)[33m.[39mtoHaveProperty([32m'email'[39m[33m,[39m 
+[32m'a@b.com'[39m)[33m;[39m
+     [90m    |[39m                      
+[31m[1m^[22m[39m
+     [90m 36 |[39m     })[33m;[39m
+     [90m 37 |[39m
+     [90m 38 |[39m     it([32m'should return null when 
+user not found'[39m[33m,[39m [36masync[39m () 
+[33m=>[39m {[0m
+
+      at Object.<anonymous> 
+(users/users.service.spec.ts:35:22)
+
+  ΓùÅ UsersService ΓÇ║ findMe ΓÇ║ should return null when 
+user not found
+
+    expect(received).toBeNull()
+
+    Received: undefined
+
+    [0m [90m 39 |[39m       mockUserModel[33m.[39mfind
+One[33m.[39mmockResolvedValue([36mnull[39m)[33m;[39m
+     [90m 40 |[39m       [36mconst[39m result 
+[33m=[39m [36mawait[39m 
+service[33m.[39mfindMe([32m'bad-id'[39m)[33m;[39m
+    [31m[1m>[22m[39m[90m 41 |[39m       
+expect(result)[33m.[39mtoBeNull()[33m;[39m
+     [90m    |[39m                      
+[31m[1m^[22m[39m
+     [90m 42 |[39m     })[33m;[39m
+     [90m 43 |[39m   })[33m;[39m
+     [90m 44 |[39m[0m
+
+      at Object.<anonymous> 
+(users/users.service.spec.ts:41:22)
+
+PASS src/users/users.controller.spec.ts (27.074 s)
+
+Test Suites: 1 failed, 4 passed, 5 total
+Tests:       2 failed, 11 passed, 13 total
+Snapshots:   0 total
+Time:        30.5 s
+Ran all test suites.

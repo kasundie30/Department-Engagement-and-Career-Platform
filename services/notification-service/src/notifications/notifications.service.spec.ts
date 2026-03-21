@@ -1,7 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from './notifications.service';
 import { getModelToken } from '@nestjs/mongoose';
-import { Notification, NotificationType } from './schemas/notification.schema';
+import {
+  Notification,
+  NotificationDocument,
+  NotificationType,
+} from './schemas/notification.schema';
+import { DeviceToken } from './schemas/device-token.schema';
+import { CreateNotificationDto } from './dto/notification.dto';
+
+jest.mock('firebase-admin', () => ({
+  apps: [],
+  initializeApp: jest.fn(),
+  messaging: jest.fn().mockReturnValue({
+    sendEachForMulticast: jest.fn(),
+  }),
+}));
+
+jest.mock('expo-server-sdk', () => ({
+  Expo: jest.fn().mockImplementation(() => ({
+    chunkPushNotifications: jest.fn().mockReturnValue([]),
+    sendPushNotificationsAsync: jest.fn(),
+  })),
+}));
 
 const VALID_ID = '507f1f77bcf86cd799439011';
 const VALID_ID2 = '507f191e810c19729de860ea';
@@ -10,8 +31,14 @@ const mockNotificationModel = {
   findOne: jest.fn(),
   create: jest.fn(),
   find: jest.fn(),
+  countDocuments: jest.fn(),
   findOneAndUpdate: jest.fn(),
   updateMany: jest.fn(),
+};
+
+const mockDeviceTokenModel = {
+  find: jest.fn().mockResolvedValue([]),
+  findOneAndUpdate: jest.fn(),
 };
 
 describe('NotificationsService', () => {
@@ -24,6 +51,10 @@ describe('NotificationsService', () => {
         {
           provide: getModelToken(Notification.name),
           useValue: mockNotificationModel,
+        },
+        {
+          provide: getModelToken(DeviceToken.name),
+          useValue: mockDeviceTokenModel,
         },
       ],
     }).compile();

@@ -89,6 +89,7 @@ export const Jobs: React.FC = () => {
     };
 
     const canPostJob = hasRole('admin') || hasRole('alumni');
+    const isAlumni = hasRole('alumni');
 
     const { query } = useSearch();
     const filteredJobs = query
@@ -136,13 +137,15 @@ export const Jobs: React.FC = () => {
                                         <h3 className="job-title">{job.title}</h3>
                                         <span className={`job-type-badge ${job.type}`}>{job.type}</span>
                                     </div>
-                                    <button
-                                        className={`apply-btn ${hasApplied ? 'applied' : ''}`}
-                                        onClick={() => handleApply(job._id)}
-                                        disabled={hasApplied}
-                                    >
-                                        {hasApplied ? 'Applied ✓' : 'Apply Now'}
-                                    </button>
+                                    {!isAlumni && (
+                                        <button
+                                            className={`apply-btn ${hasApplied ? 'applied' : ''}`}
+                                            onClick={() => handleApply(job._id)}
+                                            disabled={hasApplied}
+                                        >
+                                            {hasApplied ? 'Applied ✓' : 'Apply Now'}
+                                        </button>
+                                    )}
                                 </div>
 
                                 <h4 className="job-company">{job.company}</h4>

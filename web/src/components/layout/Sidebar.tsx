@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Rss, Briefcase, CalendarDays, FlaskConical, Bell, User, LogOut } from 'lucide-react';
+import { LayoutDashboard, Rss, Briefcase, CalendarDays, FlaskConical, Bell, User, LogOut, MessageSquare } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import './Sidebar.css';
 
@@ -43,6 +43,7 @@ export const Sidebar: React.FC = () => {
                 <div className="sidebar-section">
                     <h3 className="sidebar-section-title">Collaborate</h3>
                     <nav className="sidebar-nav">
+                        <NavItem to="/messaging" icon={<MessageSquare size={20} />} label="Messages" />
                         <NavItem to="/research" icon={<FlaskConical size={20} />} label="Research" />
                     </nav>
                 </div>

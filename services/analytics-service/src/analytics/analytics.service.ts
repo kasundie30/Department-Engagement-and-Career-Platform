@@ -17,10 +17,14 @@ export class AnalyticsService {
     }
 
     // ── GET /api/v1/analytics/overview ─────────────────────────────────────────
-    // G7.1: Extended response includes totalUsers, openJobs, activeResearch
+    // G7.1: Extended response includes totalUsers, openJobs, activeResearch, dau, wau
     async getOverview() {
         const db = this.getDb();
-        const [users, posts, jobs, events, openJobs, activeResearch] = await Promise.all([
+        const now = new Date();
+        const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+        const [users, posts, jobs, events, openJobs, activeResearch, dau, wau] = await Promise.all([
             db.collection('users').countDocuments(),
             db.collection('posts').countDocuments(),
             db.collection('jobs').countDocuments(),
@@ -29,6 +33,10 @@ export class AnalyticsService {
             db.collection('jobs').countDocuments({ status: 'open' }),
             // G7.1: active research projects
             db.collection('researches').countDocuments({ status: 'active' }),
+            // Daily Active Users
+            db.collection('users').countDocuments({ lastActiveAt: { $gte: oneDayAgo } }),
+            // Weekly Active Users
+            db.collection('users').countDocuments({ lastActiveAt: { $gte: oneWeekAgo } }),
         ]);
         return {
             // existing fields (backward compat)
@@ -40,6 +48,8 @@ export class AnalyticsService {
             totalUsers: users,
             openJobs,
             activeResearch,
+            activeUsersDaily: dau,
+            activeUsersWeekly: wau,
         };
     }
 

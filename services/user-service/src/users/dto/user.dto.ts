@@ -3,7 +3,7 @@ import { UserRole } from '../schemas/user.schema';
 
 export class CreateUserDto {
   @IsString()
-  keycloakId: string;
+  auth0Id: string;
 
   @IsEmail()
   email: string;

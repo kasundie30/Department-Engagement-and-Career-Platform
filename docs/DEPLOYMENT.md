@@ -249,12 +249,24 @@ Repeat **2.1** for each remaining service. Key differences:
 
 ---
 
-## Phase 3: Deploy Web App to Vercel
+## Phase 3: Deploy Web App to Render (Static Site)
 
-1. **Create `.env.production.local` in `web/` folder:**
-   ```bash
-   cd web/
-   cat > .env.production.local << EOF
+Render is excellent for hosting React/Vite applications and uses their global CDN.
+
+1. **Create Web Site on Render:**
+   - Go to [Render Dashboard](https://dashboard.render.com/)
+   - Click "New+" → **"Static Site"** (Do not choose Web Service)
+   - Connect your GitHub repository
+
+2. **Configure Static Site:**
+   - **Name:** `miniproject-web`
+   - **Build Command:** `cd web && npm install && npm run build`
+   - **Publish Directory:** `web/dist`
+   - **Branch:** `main`
+
+3. **Add Environment Variables:**
+   - Under "Advanced" → "Environment Variables", add all your `VITE_*` variables.
+   ```
    VITE_AUTH0_DOMAIN=your-tenant.auth0.com
    VITE_AUTH0_CLIENT_ID=<spa-app-client-id-from-auth0>
    VITE_AUTH0_AUDIENCE=https://api.miniproject.com
@@ -266,41 +278,31 @@ Repeat **2.1** for each remaining service. Key differences:
    VITE_RESEARCH_SERVICE_URL=https://research-service-xyz.onrender.com
    VITE_ANALYTICS_SERVICE_URL=https://analytics-service-xyz.onrender.com
    VITE_MESSAGING_SERVICE_URL=https://messaging-service-xyz.onrender.com
-   EOF
    ```
 
-2. **Test locally:**
-   ```bash
-   npm install
-   npm run build
-   npm run preview
-   ```
-   - Should build successfully
-   - When previewing, Login should redirect to Auth0
+4. **Deploy & Add Redirect Rules (Important for React Router):**
+   - Click "Create Static Site"
+   - Once the deployment finishes, you will get a URL like `https://miniproject-web.onrender.com`
+   - Go to the **Redirects/Rewrites** tab for this Static Site in Render.
+   - Add a rule to support React Router:
+     - **Source:** `/*`
+     - **Destination:** `/index.html`
+     - **Action:** `Rewrite`
+   - Click "Save Changes"
 
-3. **Deploy to Vercel:**
-   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
-   - Click "Add New..." → "Project"
-   - Import your GitHub repository
-   - Select the `web` folder as the "Root Directory"
-   - Under "Environment Variables", add all `VITE_*` variables from `.env.production.local`
-   - Click "Deploy"
-
-4. **Configure Auth0 callback:**
-   - Once Vercel deployment is live, you'll get a URL (e.g., `https://miniproject.vercel.app`)
-   - Go back to Auth0 Dashboard
-   - Select your SPA application
-   - Update "Allowed Callback URLs" to include your Vercel URL:
+5. **Configure Auth0 callback:**
+   - Go back to Auth0 Dashboard → Applications → Your SPA
+   - Update "Allowed Callback URLs" to include your Render URL:
      ```
-     https://miniproject.vercel.app/callback
+     https://miniproject-web.onrender.com/callback
      ```
    - Update "Allowed Logout URLs":
      ```
-     https://miniproject.vercel.app
+     https://miniproject-web.onrender.com
      ```
    - Update "Allowed Web Origins":
      ```
-     https://miniproject.vercel.app
+     https://miniproject-web.onrender.com
      ```
    - Click "Save Changes"
 
@@ -328,10 +330,10 @@ To properly pass roles from Auth0 to your services:
 
 ### 4.2 Test End-to-End
 
-1. **Open your Vercel URL:** `https://your-domain.vercel.app`
+1. **Open your Render Web URL:** `https://your-domain.onrender.com`
 2. **Click "Login"** → Should redirect to Auth0
 3. **Log in with Auth0** → Should redirect back to your app
-4. **Dashboard should load** → API calls should hit Render services
+4. **Dashboard should load** → API calls should hit backend Render services
 5. **Check browser DevTools (Network tab)** → Requests should go to `https://...-xyz.onrender.com/api/v1/...`
 
 ### 4.3 Set Up Error Monitoring (Optional)
@@ -347,16 +349,16 @@ Consider adding error tracking:
 All service URLs are configured in **one place** for easy updates:
 
 ### For Services:
-- Edit respective `.env` files on Render dashboard
+- Edit respective `.env` files on Render backend dashboards
 
 ### For Web App:
-- Edit environment variables on Vercel dashboard
+- Edit environment variables on Render Static Site dashboard
 - File: `web/src/config/services.ts` (contains fallback localhost URLs for development)
 
 To update all service URLs:
-1. On Vercel dashboard, click "Settings" → "Environment Variables"
-2. Update all `VITE_*_SERVICE_URL` variables with new Render URLs
-3. Trigger a redeploy (or click "Redeploy" button)
+1. On Render Static Site dashboard, click "Environment"
+2. Update all `VITE_*_SERVICE_URL` variables with new Backend URLs
+3. Trigger a manual deploy
 
 ---
 
@@ -383,8 +385,8 @@ To update all service URLs:
 ### Auth0 login not redirecting back
 - **Symptom:** Stuck on Auth0 login page
 - **Solution:**
-  - Verify Vercel URL is in Auth0 "Allowed Callback URLs"
-  - Check `VITE_AUTH0_DOMAIN` and `VITE_AUTH0_CLIENT_ID` in Vercel env vars
+  - Verify Render Web URL is in Auth0 "Allowed Callback URLs"
+  - Check `VITE_AUTH0_DOMAIN` and `VITE_AUTH0_CLIENT_ID` in Render env vars
   - Clear browser cookies and cache, try again
 
 ### Services can't reach each other
@@ -406,41 +408,56 @@ To update all service URLs:
     });
     ```
 
----
-
-## Monitoring & Maintenance
-
-### Daily Checks
-- Monitor Render dashboard for service health
-- Check Vercel Analytics for web app performance
-- Monitor MongoDB Atlas for storage/connection usage
-
-### Scaling
-- When traffic increases, upgrade Render plans from free to paid
-- MongoDB Atlas can auto-scale; enable this for production
-- Consider adding CDN (Vercel includes Vercel Edge)
-
-### Secrets Rotation
-- Rotate Auth0 credentials every 6 months
-- Rotate R2 API tokens annually
-- Monitor Upstash Redis memory usage
+### Render Health Check 404 Error (`Cannot GET /` or `Cannot HEAD /`)
+- **Symptom:** In Render logs, you see `ERROR [AllExceptionsFilter] [HTTP 404] HEAD / - Error Trace: NotFoundException: Cannot HEAD /` immediately after deployment.
+- **Why it happens:** Render's automated health checker pings the root URL (`/`) to see if the service is alive. Your NestJS apis are all prefixed with `/api/v1...`, so the root route returns a 404 Not Found. This is completely harmless and your app is actually running fine.
+- **Solution:** 
+  - Go to your Render Web Service settings.
+  - Scroll down to **Advanced** → **Health Check Path**.
+  - Change it from `/` to `/api/v1/health`. 
+  - Render will now ping your actual health endpoint and you won't see those 404 logs.
 
 ---
 
-## Summary of Deployment Checklist
+## Master Checklist: Where to Make Changes for Deployment
 
-- [ ] MongoDB Atlas cluster created
-- [ ] Auth0 tenant, API, SPA app configured
-- [ ] Cloudflare R2 bucket and API token created
-- [ ] Upstash Redis instance created
-- [ ] All 8 services deployed to Render and URLs saved
-- [ ] Web app deployed to Vercel
-- [ ] Auth0 callback URLs include Vercel domain
-- [ ] Environment variables configured on all platforms
-- [ ] End-to-end login test passed
-- [ ] API requests resolving to correct Render services
+When moving to production, here is the master list of everything you need to change across code and dashboards:
 
----
+### 1. In Code (Repository)
+There are almost NO hardcoded production values in the codebase. Everything is strictly environment-variable driven.
+- **Code Change:** You do NOT need to change code to deploy. The architecture is ready.
+- **CORS Config:** In each service's `main.ts`, ensure `app.enableCors()` allows your Front-End URL. (Already handled via `process.env.FRONTEND_URL || '*'` fallback).
+
+### 2. Render Settings (Backend Dashboards)
+For **every** service deployed (8 total), you must configure the "Environment Variables" tab in Render:
+- Set `NODE_ENV` to `production`
+- Set `MONGO_URI` to your MongoDB Atlas connection string (use the SAME string for all 8)
+- Set `AUTH0_DOMAIN` to `dev-ql54xjx71jnttf1o.us.auth0.com`
+- Set `AUTH0_AUDIENCE` to `https://api.decp-co528.com`
+- Set `REDIS_URL` in `feed-service` to your Upstash URL `rediss://...`
+- Set `R2_*` variables in `feed-service` and `research-service`
+- Set `NOTIFICATION_SERVICE_URL` to your live Render notification-service URL where required
+- Set **Health Check Path** under Advanced settings to `/api/v1/health`
+
+### 3. Render Settings (Frontend Static Site Dashboard)
+In the Render Dashboard for your `web` Static Site, go to **Environment** and add:
+- `VITE_AUTH0_DOMAIN` = `dev-ql54xjx71jnttf1o.us.auth0.com`
+- `VITE_AUTH0_CLIENT_ID` = `MUKsKjXPuBpmgamSIKhFl62jhC1kqD88`
+- `VITE_AUTH0_AUDIENCE` = `https://api.decp-co528.com`
+- **Crucial Step:** Create 8 variables mapping to your Render services:
+  - `VITE_USER_SERVICE_URL` = `https://user-service-xxxx.onrender.com`
+  - `VITE_FEED_SERVICE_URL` = `https://feed-service-xxxx.onrender.com`
+  - `VITE_JOB_SERVICE_URL` = `https://job-service-xxxx.onrender.com`
+  - (and so on for all 8 microservices)
+
+### 4. Auth0 Dashboard Settings
+- **Application URIs:** In your Auth0 SPA Application settings, add your Render Web domain (`https://miniproject-web.onrender.com`) to:
+  - Allowed Callback URLs
+  - Allowed Logout URLs
+  - Allowed Web Origins
+
+### 5. MongoDB Atlas Settings
+- **Network Access:** Ensure your MongoDB Network Access IP Whitelist includes Render's IP addresses, or use `0.0.0.0/0` (Allow Access from Anywhere) if Render IPs are dynamic.
 
 ## Support & Resources
 

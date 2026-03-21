@@ -1,0 +1,88 @@
+﻿npx : FAIL src/notifications/notifications.service.spec.ts
+At line:1 char:155
++ ... -service" ; npx jest --testPathPatterns 
+notifications.service.spec 2> ...
++                 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (FAIL src/noti 
+   fi...service.spec.ts:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  ΓùÅ Test suite failed to run
+
+    Jest encountered an unexpected token
+
+    Jest failed to parse a file. This happens e.g. when 
+your code or its dependencies use non-standard JavaScript 
+syntax, or when Jest is not configured to support such 
+syntax.
+
+    Out of the box Jest supports Babel, which will be used 
+to transform your files into valid JS based on your Babel 
+configuration.
+
+    By default "node_modules" folder is ignored by 
+transformers.
+
+    Here's what you can do:
+     ΓÇó If you are trying to use ECMAScript Modules, see 
+https://jestjs.io/docs/ecmascript-modules for how to 
+enable it.
+     ΓÇó If you are trying to use TypeScript, see 
+https://jestjs.io/docs/getting-started#using-typescript
+     ΓÇó To have some of your "node_modules" files 
+transformed, you can specify a custom 
+"transformIgnorePatterns" in your config.
+     ΓÇó If you need a custom transformation, specify a 
+"transform" option in your config.
+     ΓÇó If you simply want to mock your non-JS modules 
+(e.g. binary assets) you can stub them out with the 
+"moduleNameMapper" config option.
+
+    You'll find more details and examples of these config 
+options in the docs:
+    https://jestjs.io/docs/configuration
+    For information about custom transformations, see:
+    https://jestjs.io/docs/code-transformation
+
+    Details:
+
+    D:\ACADEMICS\Semester 7\CO528 Applied Software 
+Architecture\6 Mini Project\Department-Engagement-and-Caree
+r-Platform\services\notification-service\node_modules\expo-
+server-sdk\build\ExpoClient.js:8
+    import assert from 'node:assert';
+    ^^^^^^
+
+    SyntaxError: Cannot use import statement outside a 
+module
+
+    [0m [90m 11 |[39m [36mimport[39m { 
+[33mDeviceToken[39m[33m,[39m 
+[33mDeviceTokenDocument[39m[33m,[39m 
+[33mTokenType[39m } [36mfrom[39m 
+[32m'./schemas/device-token.schema'[39m[33m;[39m
+     [90m 12 |[39m [36mimport[39m [33m*[39m 
+[36mas[39m admin [36mfrom[39m 
+[32m'firebase-admin'[39m[33m;[39m
+    [31m[1m>[22m[39m[90m 13 |[39m [36mimport[39m { 
+[33mExpo[39m } [36mfrom[39m 
+[32m'expo-server-sdk'[39m[33m;[39m
+     [90m    |[39m [31m[1m^[22m[39m
+     [90m 14 |[39m
+     [90m 15 |[39m [33m@[39m[33mInjectable[39m()
+     [90m 16 |[39m [36mexport[39m [36mclass[39m 
+[33mNotificationsService[39m {[0m
+
+      at Runtime.createScriptFromCode 
+(../node_modules/jest-runtime/build/index.js:1314:40)
+      at Object.<anonymous> 
+(notifications/notifications.service.ts:13:1)
+      at Object.<anonymous> 
+(notifications/notifications.service.spec.ts:2:1)
+
+Test Suites: 1 failed, 1 total
+Tests:       0 total
+Snapshots:   0 total
+Time:        1.688 s
+Ran all test suites matching notifications.service.spec.

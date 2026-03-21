@@ -27,24 +27,25 @@ describe('UsersService', () => {
 
   describe('findMe', () => {
     it('should return user when found', async () => {
-      mockUserModel.findOne.mockResolvedValue({
-        keycloakId: 'kc-123',
+      mockUserModel.findOneAndUpdate.mockResolvedValue({
+        auth0Id: 'auth0-123',
         email: 'a@b.com',
       });
-      const result = await service.findMe('kc-123');
+      const result = await service.findMe('auth0-123');
       expect(result).toHaveProperty('email', 'a@b.com');
     });
 
-    it('should throw NotFoundException when user not found', async () => {
-      mockUserModel.findOne.mockResolvedValue(null);
-      await expect(service.findMe('bad-id')).rejects.toThrow(NotFoundException);
+    it('should return null when user not found', async () => {
+      mockUserModel.findOneAndUpdate.mockResolvedValue(null);
+      const result = await service.findMe('bad-id');
+      expect(result).toBeNull();
     });
   });
 
   describe('updateMe', () => {
     it('should update and return user', async () => {
       mockUserModel.findOneAndUpdate.mockResolvedValue({ name: 'Updated' });
-      const result = await service.updateMe('kc-123', { name: 'Updated' });
+      const result = await service.updateMe('auth0-123', { name: 'Updated' });
       expect(result.name).toBe('Updated');
     });
 
