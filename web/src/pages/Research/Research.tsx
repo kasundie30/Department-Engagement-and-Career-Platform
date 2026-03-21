@@ -24,7 +24,7 @@ interface Project {
 }
 
 export const Research: React.FC = () => {
-    const { user } = useAuth();
+    const { user, hasRole } = useAuth();
     const [projects, setProjects] = useState<Project[]>([]);
     const [loading, setLoading] = useState(false);
 
@@ -126,10 +126,12 @@ export const Research: React.FC = () => {
                     <h1>Research Collaboration</h1>
                     <p className="subtitle">Manage research projects, share datasets, and collaborate with peers.</p>
                 </div>
-                <button className="primary-btn" onClick={() => setShowCreateModal(true)}>
-                    <Plus size={18} />
-                    <span>New Project</span>
-                </button>
+                {(hasRole('researcher') || hasRole('admin')) && (
+                    <button className="primary-btn" onClick={() => setShowCreateModal(true)}>
+                        <Plus size={18} />
+                        <span>New Project</span>
+                    </button>
+                )}
             </div>
 
             <div className="projects-grid">

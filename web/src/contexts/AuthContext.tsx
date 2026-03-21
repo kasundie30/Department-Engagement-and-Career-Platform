@@ -47,8 +47,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             name: auth0User.name,
             picture: auth0User.picture,
             // Custom roles claim set in Auth0 Actions
-            roles: (auth0User[`${import.meta.env.VITE_AUTH0_AUDIENCE}/roles`] ||
-                auth0User['https://department-platform/roles'] || []) as string[],
+            roles: (auth0User['https://api.decp.com/roles'] ||
+                auth0User[`${import.meta.env.VITE_AUTH0_AUDIENCE}/roles`] ||
+                []) as string[],
         }
         : null;
 
