@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../notifications/providers/notification_provider.dart';
+import '../../notifications/services/push_notification_service.dart';
 
 class MainShell extends ConsumerStatefulWidget {
   final Widget child;
@@ -18,6 +19,7 @@ class _MainShellState extends ConsumerState<MainShell> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(notificationProvider.notifier).startPolling();
+      ref.read(pushNotificationServiceProvider).initialize();
     });
   }
 
