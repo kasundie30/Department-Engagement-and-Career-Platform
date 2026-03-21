@@ -48,7 +48,7 @@ class ConversationListScreen extends ConsumerWidget {
                   style: const TextStyle(color: Colors.grey, fontSize: 13),
                 ),
                 onTap: () {
-                  ref.read(currentConversationIdProvider.notifier).state = conversation.id;
+                  ref.read(currentConversationIdProvider.notifier).set(conversation.id);
                   context.push('/messaging/${conversation.id}');
                 },
               );

@@ -10,9 +10,20 @@ final conversationsProvider = FutureProvider.autoDispose<List<Conversation>>((re
   return repository.fetchConversations();
 });
 
-final currentConversationIdProvider = StateProvider<String?>((ref) => null);
+// In Riverpod v3, StateProvider is replaced by NotifierProvider with a simple Notifier.
+class CurrentConversationIdNotifier extends Notifier<String?> {
+  @override
+  String? build() => null;
 
-class MessagesNotifier extends AutoDisposeAsyncNotifier<List<Message>> {
+  void set(String? id) => state = id;
+}
+
+final currentConversationIdProvider =
+    NotifierProvider<CurrentConversationIdNotifier, String?>(
+        CurrentConversationIdNotifier.new);
+
+// In Riverpod v3, auto-dispose is the default; AutoDisposeAsyncNotifier → AsyncNotifier.
+class MessagesNotifier extends AsyncNotifier<List<Message>> {
   StreamSubscription<Message>? _socketSubscription;
 
   @override
@@ -24,7 +35,7 @@ class MessagesNotifier extends AutoDisposeAsyncNotifier<List<Message>> {
     final messages = await repository.fetchMessages(conversationId);
 
     final socketService = ref.watch(socketServiceProvider);
-    
+
     // Setup Socket connection
     socketService.connect().then((_) {
       socketService.joinConversation(conversationId);
@@ -32,7 +43,7 @@ class MessagesNotifier extends AutoDisposeAsyncNotifier<List<Message>> {
 
     _socketSubscription = socketService.onNewMessage.listen((newMessage) {
       if (newMessage.conversationId == conversationId) {
-        state = AsyncData([...state.valueOrNull ?? [], newMessage]);
+        state = AsyncData([...state.value ?? [], newMessage]);
       }
     });
 
@@ -45,14 +56,15 @@ class MessagesNotifier extends AutoDisposeAsyncNotifier<List<Message>> {
   }
 
   void sendMessage(String content) {
-    final conversationId = ref.watch(currentConversationIdProvider);
+    final conversationId = ref.read(currentConversationIdProvider);
     if (conversationId == null) return;
-    
+
     final socketService = ref.read(socketServiceProvider);
     socketService.sendMessage(conversationId, content);
   }
 }
 
-final messagesProvider = AutoDisposeAsyncNotifierProvider<MessagesNotifier, List<Message>>(() {
-  return MessagesNotifier();
-});
+// In Riverpod v3, AutoDisposeAsyncNotifierProvider → AsyncNotifierProvider.
+final messagesProvider =
+    AsyncNotifierProvider<MessagesNotifier, List<Message>>(
+        MessagesNotifier.new);
