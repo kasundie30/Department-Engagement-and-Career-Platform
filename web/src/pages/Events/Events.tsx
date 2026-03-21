@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, MapPin, Users, Plus, X, Video } from 'lucide-react';
+import { Calendar, MapPin, Users, Plus, X, Video, Trash2 } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
@@ -13,6 +13,7 @@ interface Event {
     location: string;
     format: 'in-person' | 'online' | 'hybrid';
     organizer: string;
+    createdBy: string;
     attendees: string[];
     status: 'upcoming' | 'live' | 'ended' | 'cancelled';
     maxAttendees?: number;
@@ -41,6 +42,7 @@ export const Events: React.FC = () => {
                 format: e.format ?? 'in-person',
                 description: e.description ?? '',
                 status: e.status ?? 'upcoming',
+                createdBy: e.createdBy ?? e.organizer ?? '',
             })));
         } catch (err) {
             console.error('Failed to load events', err);
@@ -121,7 +123,18 @@ export const Events: React.FC = () => {
         }
     };
 
-    const canCreateEvent = hasRole('admin') || hasRole('alumni');
+    const canCreateEvent = hasRole('admin') || hasRole('alumni') || hasRole('staff');
+
+    const handleDeleteEvent = async (eventId: string) => {
+        if (!window.confirm('Delete this event? This cannot be undone.')) return;
+        try {
+            await api.delete(`/api/v1/event-service/events/${eventId}`);
+            setEvents(prev => prev.filter(e => e._id !== eventId));
+        } catch (err) {
+            console.error('Failed to delete event', err);
+            alert('Failed to delete event.');
+        }
+    };
 
     const { query } = useSearch();
     const filteredEvents = query
@@ -166,6 +179,16 @@ export const Events: React.FC = () => {
                                 <div className="event-details">
                                     <div className="event-header-row">
                                         <h3 className="event-title">{event.title}</h3>
+                                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                        {(event.createdBy === user?.sub || hasRole('admin')) && (
+                                            <button
+                                                title="Delete event"
+                                                onClick={() => handleDeleteEvent(event._id)}
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e53e3e', padding: 4 }}
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        )}
                                         <div className="event-badges">
                                             <span className={`event-status-badge ${event.status}`}>
                                                 {event.status.charAt(0).toUpperCase() + event.status.slice(1)}
@@ -174,6 +197,7 @@ export const Events: React.FC = () => {
                                             {event.format === 'online' ? <Video size={14} /> : <MapPin size={14} />}
                                             {(event.format ?? '').charAt(0).toUpperCase() + (event.format ?? '').slice(1)}
                                             </span>
+                                        </div>
                                         </div>
                                     </div>
 

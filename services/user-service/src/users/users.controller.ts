@@ -4,6 +4,7 @@ import {
   Patch,
   Param,
   Body,
+  Query,
   UseGuards,
   Request,
 } from '@nestjs/common';
@@ -47,6 +48,18 @@ export class UsersController {
   @Get('health')
   health() {
     return { status: 'ok', service: 'user-service', timestamp: new Date().toISOString() };
+  }
+
+  // Any authenticated: search users by name or email (for DM creation, collaborator invite)
+  @Get('search')
+  async searchUsers(@Query('q') q: string) {
+    return this.usersService.search(q || '');
+  }
+
+  // Any authenticated: get public profile of a user by their Auth0 ID
+  @Get('by-auth0/:auth0Id')
+  async findByAuth0Id(@Param('auth0Id') auth0Id: string) {
+    return this.usersService.findByAuth0Id(auth0Id);
   }
 
   @Get(':id')

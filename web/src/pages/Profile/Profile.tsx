@@ -103,7 +103,16 @@ export const Profile: React.FC = () => {
                             <div className="profile-cover"></div>
                             <div className="profile-header-content">
                                 <div className="profile-avatar-large">
-                                    {(profile.name || profile.displayName)?.charAt(0) || user?.firstName?.charAt(0) || 'U'}
+                                    {user?.picture ? (
+                                        <img
+                                            src={user.picture}
+                                            alt="Profile"
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
+                                            onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                                        />
+                                    ) : (
+                                        (profile.name || profile.displayName)?.charAt(0) || user?.firstName?.charAt(0) || 'U'
+                                    )}
                                 </div>
                                 <div className="profile-header-info">
                                     <div className="profile-name-row">

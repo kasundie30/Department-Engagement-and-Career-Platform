@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Post, PostDocument } from './schemas/post.schema';
@@ -203,6 +203,17 @@ export class FeedService {
       items,
       meta: { totalPages: Math.ceil(total / limit) || 1, page },
     };
+  }
+
+  async deletePost(postId: string, userId: string, userRole: string): Promise<void> {
+    const post = await this.findById(postId);
+    if (post.userId !== userId && userRole !== 'admin') {
+      throw new ForbiddenException('You can only delete your own posts');
+    }
+    await this.postModel.findByIdAndDelete(postId);
+    await this.commentModel.deleteMany({ postId: new Types.ObjectId(postId) });
+    const keys = await this.redis.keys('feed:page:*');
+    await Promise.all(keys.map((k) => this.redis.del(k)));
   }
 
   async uploadImage(buffer: Buffer, mimetype: string): Promise<string> {

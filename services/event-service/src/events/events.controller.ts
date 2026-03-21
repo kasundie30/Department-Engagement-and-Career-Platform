@@ -20,10 +20,10 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class EventsController {
   constructor(private readonly eventsService: EventsService) { }
 
-  // Alumni/Admin: create event
+  // Alumni/Staff/Admin: create event
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('alumni', 'admin')
+  @Roles('alumni', 'staff', 'admin')
   create(@Request() req, @Body() dto: CreateEventDto) {
     return this.eventsService.create(req.user.sub, dto);
   }
@@ -40,10 +40,10 @@ export class EventsController {
     return this.eventsService.findById(id);
   }
 
-  // Alumni/Admin: update status (upcoming → live → ended)
+  // Alumni/Staff/Admin: update status (upcoming → live → ended)
   @Patch(':id/status')
   @UseGuards(RolesGuard)
-  @Roles('alumni', 'admin')
+  @Roles('alumni', 'staff', 'admin')
   updateStatus(@Param('id') id: string, @Body() dto: UpdateEventStatusDto) {
     return this.eventsService.updateStatus(id, dto);
   }
@@ -60,11 +60,17 @@ export class EventsController {
     return this.eventsService.cancelRsvp(id, req.user.sub);
   }
 
-  // Alumni/Admin: view attendees
+  // Alumni (own events)/Staff (all)/Admin (all): view attendees
   @Get(':id/attendees')
   @UseGuards(RolesGuard)
-  @Roles('alumni', 'admin')
-  getAttendees(@Param('id') id: string) {
-    return this.eventsService.getAttendees(id);
+  @Roles('alumni', 'staff', 'admin')
+  getAttendees(@Param('id') id: string, @Request() req) {
+    return this.eventsService.getAttendees(id, req.user.sub, req.user.role);
+  }
+
+  // Creator or Admin: delete event
+  @Delete(':id')
+  deleteEvent(@Param('id') id: string, @Request() req) {
+    return this.eventsService.deleteEvent(id, req.user.sub, req.user.role);
   }
 }

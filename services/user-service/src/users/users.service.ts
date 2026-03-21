@@ -55,4 +55,24 @@ export class UsersService {
   async findAll(): Promise<UserDocument[]> {
     return this.userModel.find().exec();
   }
+
+  async findByAuth0Id(auth0Id: string): Promise<{ auth0Id: string; name: string; email: string; avatar: string; role: string } | null> {
+    const user = await this.userModel.findOne({ auth0Id });
+    if (!user) return null;
+    return { auth0Id: user.auth0Id, name: user.name, email: user.email, avatar: user.avatar || '', role: user.role };
+  }
+
+  async search(q: string): Promise<{ auth0Id: string; name: string; email: string; avatar: string }[]> {
+    if (!q || q.trim().length < 2) return [];
+    const users = await this.userModel
+      .find({
+        $or: [
+          { name: { $regex: q.trim(), $options: 'i' } },
+          { email: { $regex: q.trim(), $options: 'i' } },
+        ],
+      })
+      .limit(10)
+      .exec();
+    return users.map(u => ({ auth0Id: u.auth0Id, name: u.name, email: u.email, avatar: u.avatar || '' }));
+  }
 }

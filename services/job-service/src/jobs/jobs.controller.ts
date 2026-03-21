@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Param,
   Body,
   Query,
@@ -25,10 +26,10 @@ import { Roles } from '../auth/decorators/roles.decorator';
 export class JobsController {
   constructor(private readonly jobsService: JobsService) {}
 
-  // Alumni/Admin: create job
+  // Alumni/Staff/Admin: create job
   @Post()
   @UseGuards(RolesGuard)
-  @Roles('alumni', 'admin')
+  @Roles('alumni', 'staff', 'admin')
   create(@Request() req, @Body() dto: CreateJobDto) {
     return this.jobsService.create(req.user.sub, dto);
   }
@@ -50,18 +51,18 @@ export class JobsController {
     return this.jobsService.findById(id);
   }
 
-  // Alumni/Admin: update job status (open → closed)
+  // Alumni/Staff/Admin: update job status (open → closed)
   @Patch(':id/status')
   @UseGuards(RolesGuard)
-  @Roles('alumni', 'admin')
+  @Roles('alumni', 'staff', 'admin')
   updateStatus(@Param('id') id: string, @Body() dto: UpdateJobStatusDto) {
     return this.jobsService.updateStatus(id, dto);
   }
 
-  // Student: apply for a job
+  // Student/Admin: apply for a job
   @Post(':id/apply')
   @UseGuards(RolesGuard)
-  @Roles('student')
+  @Roles('student', 'admin')
   apply(
     @Param('id') id: string,
     @Request() req,
@@ -70,10 +71,10 @@ export class JobsController {
     return this.jobsService.apply(id, req.user.sub, dto);
   }
 
-  // Alumni/Admin: update application status
+  // Alumni/Staff/Admin: update application status
   @Patch(':id/applications/:appId')
   @UseGuards(RolesGuard)
-  @Roles('alumni', 'admin')
+  @Roles('alumni', 'staff', 'admin')
   updateApplicationStatus(
     @Param('id') id: string,
     @Param('appId') appId: string,
@@ -82,11 +83,18 @@ export class JobsController {
     return this.jobsService.updateApplicationStatus(id, appId, dto);
   }
 
-  // Alumni/Admin: list applications for a job
+  // Alumni/Staff/Admin: list applications for a job
   @Get(':id/applications')
   @UseGuards(RolesGuard)
-  @Roles('alumni', 'admin')
+  @Roles('alumni', 'staff', 'admin')
   findApplications(@Param('id') id: string) {
     return this.jobsService.findApplicationsByJob(id);
+  }
+
+  // Poster or Admin: delete job
+  @Delete(':id')
+  async deleteJob(@Param('id') id: string, @Request() req) {
+    await this.jobsService.deleteJob(id, req.user.sub, req.user.role);
+    return { deleted: true };
   }
 }

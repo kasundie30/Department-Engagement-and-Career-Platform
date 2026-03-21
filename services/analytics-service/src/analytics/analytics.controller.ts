@@ -23,8 +23,10 @@ export class AnalyticsController {
         return this.analyticsService.getOverview();
     }
 
-    // Any authenticated user: popular posts
+    // Admin only: popular posts
     @Get('posts')
+    @UseGuards(RolesGuard)
+    @Roles('admin')
     getPopularPosts(@Query('limit') limit?: string) {
         const parsedLimit = limit !== undefined ? parseInt(limit, 10) : 5;
         if (!Number.isInteger(parsedLimit) || parsedLimit < 1 || parsedLimit > 100) {
@@ -33,14 +35,18 @@ export class AnalyticsController {
         return this.analyticsService.getPopularPosts(parsedLimit);
     }
 
-    // Any authenticated user: job application counts
+    // Admin only: job application counts
     @Get('jobs')
+    @UseGuards(RolesGuard)
+    @Roles('admin')
     getJobApplicationCounts() {
         return this.analyticsService.getJobApplicationCounts();
     }
 
-    // Any authenticated user: user registrations over time
+    // Admin only: user registrations over time
     @Get('users')
+    @UseGuards(RolesGuard)
+    @Roles('admin')
     getUserRegistrations(@Query('days') days?: string) {
         const parsedDays = days !== undefined ? parseInt(days, 10) : 30;
         if (!Number.isInteger(parsedDays) || parsedDays < 1 || parsedDays > 365) {

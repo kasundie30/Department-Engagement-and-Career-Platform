@@ -56,7 +56,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       email,
       name,
       role:
-        roles.find((r: string) => ['student', 'alumni', 'admin'].includes(r)) ||
+        roles.find((r: string) => ['student', 'alumni', 'staff', 'admin'].includes(r)) ||
         'student',
     };
   }

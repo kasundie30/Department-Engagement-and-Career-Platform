@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Briefcase, MapPin, Clock, Plus, X } from 'lucide-react';
+import { Briefcase, MapPin, Clock, Plus, X, Trash2 } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
@@ -71,6 +71,17 @@ export const Jobs: React.FC = () => {
         }
     };
 
+    const handleDeleteJob = async (jobId: string) => {
+        if (!window.confirm('Delete this job posting? This cannot be undone.')) return;
+        try {
+            await api.delete(`/api/v1/job-service/jobs/${jobId}`);
+            setJobs(prev => prev.filter(j => j._id !== jobId));
+        } catch (err) {
+            console.error('Failed to delete job', err);
+            alert('Failed to delete job posting.');
+        }
+    };
+
     const handleCreateJob = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
@@ -88,7 +99,7 @@ export const Jobs: React.FC = () => {
         }
     };
 
-    const canPostJob = hasRole('admin') || hasRole('alumni');
+    const canPostJob = hasRole('admin') || hasRole('alumni') || hasRole('staff');
     const isAlumni = hasRole('alumni');
 
     const { query } = useSearch();
@@ -137,6 +148,16 @@ export const Jobs: React.FC = () => {
                                         <h3 className="job-title">{job.title}</h3>
                                         <span className={`job-type-badge ${job.type}`}>{job.type}</span>
                                     </div>
+                                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                                    {(job.postedBy === user?.sub || hasRole('admin')) && (
+                                        <button
+                                            title="Delete job"
+                                            onClick={() => handleDeleteJob(job._id)}
+                                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e53e3e', padding: 4 }}
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
                                     {!isAlumni && (
                                         <button
                                             className={`apply-btn ${hasApplied ? 'applied' : ''}`}
@@ -146,6 +167,7 @@ export const Jobs: React.FC = () => {
                                             {hasApplied ? 'Applied ✓' : 'Apply Now'}
                                         </button>
                                     )}
+                                    </div>
                                 </div>
 
                                 <h4 className="job-company">{job.company}</h4>

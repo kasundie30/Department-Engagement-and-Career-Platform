@@ -2,6 +2,7 @@
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -154,8 +155,20 @@ export class EventsService {
     return updated;
   }
 
-  async getAttendees(eventId: string): Promise<string[]> {
+  async deleteEvent(eventId: string, userId: string, userRole: string): Promise<void> {
     const event = await this.findById(eventId);
+    if (event.createdBy !== userId && userRole !== 'admin') {
+      throw new ForbiddenException('You can only delete your own events');
+    }
+    await this.eventModel.findByIdAndDelete(eventId);
+  }
+
+  async getAttendees(eventId: string, requesterId: string, requesterRole: string): Promise<string[]> {
+    const event = await this.findById(eventId);
+    // Alumni can only view attendees of their own events; staff and admin can view any
+    if (requesterRole === 'alumni' && event.createdBy !== requesterId) {
+      throw new ForbiddenException('Alumni can only view attendees of their own events');
+    }
     return event.rsvps;
   }
 }

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { FlaskConical, Users, FileText, Upload, Plus, X, UserPlus, FileArchive } from 'lucide-react';
+import { FlaskConical, Users, FileText, Upload, Plus, X, UserPlus, FileArchive, Search } from 'lucide-react';
 import { api } from '../../lib/axios';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSearch } from '../../contexts/SearchContext';
+import { searchUsers } from '../../lib/userCache';
 import './Research.css';
 
 interface Document {
@@ -19,8 +20,15 @@ interface Project {
     description: string;
     status: 'active' | 'completed' | 'archived';
     ownerId: string;
-    collaborators: { userId: string; email: string; role: string }[];
+    collaborators: string[];
     documents: Document[];
+}
+
+interface UserResult {
+    auth0Id: string;
+    name: string;
+    email: string;
+    avatar: string;
 }
 
 export const Research: React.FC = () => {
@@ -32,8 +40,10 @@ export const Research: React.FC = () => {
     const [newProject, setNewProject] = useState({ title: '', description: '' });
 
     const [inviteModalProjId, setInviteModalProjId] = useState<string | null>(null);
-    const [inviteEmail, setInviteEmail] = useState('');
-    const [inviteRole, setInviteRole] = useState('researcher');
+    const [inviteQuery, setInviteQuery] = useState('');
+    const [inviteResults, setInviteResults] = useState<UserResult[]>([]);
+    const [inviteSearching, setInviteSearching] = useState(false);
+    const [selectedInvitee, setSelectedInvitee] = useState<UserResult | null>(null);
 
     const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({});
     const [uploadingDocId, setUploadingDocId] = useState<string | null>(null);
@@ -45,11 +55,7 @@ export const Research: React.FC = () => {
             const raw = Array.isArray(res.data) ? res.data : (res.data?.projects ?? res.data?.items ?? []);
             setProjects(raw.map((p: any) => ({
                 ...p,
-                collaborators: (p.collaborators ?? []).map((c: any) => ({
-                    ...c,
-                    email: c.email ?? c.userId ?? 'unknown',
-                    role: c.role ?? 'collaborator',
-                })),
+                collaborators: (p.collaborators ?? []).map((c: any) => typeof c === 'string' ? c : (c.userId ?? c.auth0Id ?? String(c))),
                 documents: p.documents ?? [],
                 status: p.status ?? 'active',
             })));
@@ -76,18 +82,36 @@ export const Research: React.FC = () => {
         }
     };
 
+    // Search users for invite
+    useEffect(() => {
+        if (inviteQuery.trim().length < 2) {
+            setInviteResults([]);
+            return;
+        }
+        setInviteSearching(true);
+        const timer = setTimeout(() => {
+            searchUsers(inviteQuery.trim())
+                .then(results => setInviteResults(results.filter(r => r.auth0Id !== user?.sub)))
+                .finally(() => setInviteSearching(false));
+        }, 300);
+        return () => clearTimeout(timer);
+    }, [inviteQuery, user?.sub]);
+
     const handleInvite = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!inviteModalProjId) return;
+        if (!inviteModalProjId || !selectedInvitee) return;
         try {
             const res = await api.post(`/api/v1/research-service/research/${inviteModalProjId}/invite`, {
-                email: inviteEmail,
-                role: inviteRole
+                userId: selectedInvitee.auth0Id
             });
-            // API typically returns the updated project
-            setProjects(prev => prev.map(p => p._id === inviteModalProjId ? res.data : p));
+            setProjects(prev => prev.map(p => p._id === inviteModalProjId ? {
+                ...p,
+                collaborators: res.data?.collaborators ?? [...p.collaborators, selectedInvitee.auth0Id]
+            } : p));
             setInviteModalProjId(null);
-            setInviteEmail('');
+            setInviteQuery('');
+            setInviteResults([]);
+            setSelectedInvitee(null);
         } catch (err) {
             alert('Failed to invite collaborator.');
         }
@@ -161,9 +185,9 @@ export const Research: React.FC = () => {
                                 </div>
                                 <div className="collaborators-list">
                                     <div className="collab-avatar owner tooltip" title="Project Owner">O</div>
-                                    {project.collaborators?.map((c, idx) => (
-                                        <div key={idx} className="collab-avatar tooltip" title={`${c.email} (${c.role})`}>
-                                            {(c.email ?? '?').charAt(0).toUpperCase()}
+                                    {project.collaborators?.map((userId, idx) => (
+                                        <div key={idx} className="collab-avatar tooltip" title={userId}>
+                                            {userId.charAt(0).toUpperCase()}
                                         </div>
                                     ))}
                                 </div>
@@ -250,24 +274,55 @@ export const Research: React.FC = () => {
                     <div className="modal-content card small">
                         <div className="modal-header">
                             <h2>Invite Collaborator</h2>
-                            <button className="icon-btn" onClick={() => setInviteModalProjId(null)}><X size={24} /></button>
+                            <button className="icon-btn" onClick={() => { setInviteModalProjId(null); setInviteQuery(''); setInviteResults([]); setSelectedInvitee(null); }}><X size={24} /></button>
                         </div>
                         <form className="modal-form" onSubmit={handleInvite}>
                             <div className="form-group">
-                                <label>Email Address</label>
-                                <input required type="email" value={inviteEmail} onChange={e => setInviteEmail(e.target.value)} />
-                            </div>
-                            <div className="form-group">
-                                <label>Role</label>
-                                <select value={inviteRole} onChange={e => setInviteRole(e.target.value)}>
-                                    <option value="researcher">Researcher</option>
-                                    <option value="supervisor">Supervisor</option>
-                                    <option value="reviewer">Reviewer</option>
-                                </select>
+                                <label>Search User</label>
+                                {selectedInvitee ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', background: '#f0f4ff', borderRadius: 8 }}>
+                                        <span style={{ fontWeight: 600 }}>{selectedInvitee.name}</span>
+                                        <span style={{ color: '#888', fontSize: 12 }}>{selectedInvitee.email}</span>
+                                        <button type="button" style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#888' }} onClick={() => setSelectedInvitee(null)}><X size={14} /></button>
+                                    </div>
+                                ) : (
+                                    <div style={{ position: 'relative' }}>
+                                        <Search size={14} style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#888' }} />
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            placeholder="Search by name or email..."
+                                            value={inviteQuery}
+                                            onChange={e => setInviteQuery(e.target.value)}
+                                            style={{ paddingLeft: 28 }}
+                                        />
+                                        {inviteSearching && <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>Searching...</div>}
+                                        {!inviteSearching && inviteQuery.trim().length >= 2 && inviteResults.length === 0 && (
+                                            <div style={{ fontSize: 12, color: '#888', marginTop: 4 }}>No users found.</div>
+                                        )}
+                                        {inviteResults.length > 0 && (
+                                            <div style={{ border: '1px solid #e2e8f0', borderRadius: 8, marginTop: 4, maxHeight: 200, overflowY: 'auto', background: '#fff' }}>
+                                                {inviteResults.map(u => (
+                                                    <button
+                                                        key={u.auth0Id}
+                                                        type="button"
+                                                        onClick={() => { setSelectedInvitee(u); setInviteQuery(''); setInviteResults([]); }}
+                                                        style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', border: 'none', background: 'none', width: '100%', cursor: 'pointer', textAlign: 'left' }}
+                                                        onMouseEnter={e => (e.currentTarget.style.background = '#f7fafc')}
+                                                        onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                                                    >
+                                                        <span style={{ fontWeight: 600, fontSize: 14 }}>{u.name}</span>
+                                                        <span style={{ color: '#888', fontSize: 12 }}>{u.email}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div className="modal-footer">
-                                <button type="button" className="cancel-btn" onClick={() => setInviteModalProjId(null)}>Cancel</button>
-                                <button type="submit" className="primary-btn">Send Invite</button>
+                                <button type="button" className="cancel-btn" onClick={() => { setInviteModalProjId(null); setInviteQuery(''); setInviteResults([]); setSelectedInvitee(null); }}>Cancel</button>
+                                <button type="submit" className="primary-btn" disabled={!selectedInvitee}>Send Invite</button>
                             </div>
                         </form>
                     </div>

@@ -3,6 +3,7 @@
   NotFoundException,
   BadRequestException,
   ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -218,6 +219,14 @@ export class JobsService {
 
   async findApplicationsByJob(jobId: string): Promise<ApplicationDocument[]> {
     return this.appModel.find({ jobId: new Types.ObjectId(jobId) }).exec();
+  }
+
+  async deleteJob(jobId: string, userId: string, userRole: string): Promise<void> {
+    const job = await this.findById(jobId);
+    if (job.postedBy !== userId && userRole !== 'admin') {
+      throw new ForbiddenException('You can only delete your own job postings');
+    }
+    await this.jobModel.findByIdAndDelete(jobId);
   }
 }
 

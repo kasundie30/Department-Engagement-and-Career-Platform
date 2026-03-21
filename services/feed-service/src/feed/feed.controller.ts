@@ -82,6 +82,12 @@ export class FeedController {
     return this.feedService.getComments(id, pageNum, limitNum);
   }
 
+  @Delete(':id')
+  async deletePost(@Param('id') id: string, @Request() req) {
+    await this.feedService.deletePost(id, req.user.sub, req.user.role);
+    return { deleted: true };
+  }
+
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadImage(@UploadedFile() file: Express.Multer.File) {
