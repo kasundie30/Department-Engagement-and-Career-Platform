@@ -48,6 +48,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const roles: string[] =
       payload[`${process.env.AUTH0_AUDIENCE}/roles`] ||
       payload['https://department-platform/roles'] ||
+      payload['https://api.decp.com/roles'] ||
       [];
 
     return {
